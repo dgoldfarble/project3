@@ -180,10 +180,21 @@ module MIPS (	R2_output,
      n = n+1;
    end
 
+	parameter Q_IFID_DATAWIDTH = 32; 	// bits in each element
+	parameter Q_IFID_ADDRWIDTH = 4;		// bits in addr ptr. 2^x elems in queue
+	
+	wire wQ_IFID_empty;
+	wire wQ_IFID_full;
+	wire wQ_IFID_pushReq;
+	wire wQ_IFID_popReq;
+	wire wQ_IFID_popValid;
+	wire [Q_IFID_DATAWIDTH -1:0] wQ_IFID_pushData;
+	wire [Q_IFID_DATAWIDTH -1:0] wQ_IFID_popData;
+	
    // Pipeline Stages Instantiation
    IF IF1( CLK,
         RESET,
-        FREEZE,
+        .FREEZE(FREEZE || wQ_IFID_full),
         fetchNull2_fID,
         PCA_IFID,
         CIA_IFID,
@@ -193,11 +204,40 @@ module MIPS (	R2_output,
         nextInstruction_address_IDIF,
         PC_init,
         /*Instr1_fIM*/Instr1_fIC,
-        Instr1_IFID,
+        /*Instr1_IFID*/.Instr1_PR(wQ_IFID_pushData),
         Instr2_IFID,
-        Instr_address_2IM
+        Instr_address_2IM,
+		.Q_IFID_pushEn(wQ_IFID_pushReq),
+		.Q_IFID_full(wQ_IFID_full)
     );
-
+		
+	queue #(.DATA_WIDTH(Q_IFID_DATAWIDTH), 	// in bits
+			.ADDR_WIDTH(Q_IFID_ADDRWIDTH), 	// in bits
+			.SHOW_DEBUG(1),					// True/False
+			.QUEUE_NAME("IFID"))				// Name for debuging
+		qIFID (
+			.clk(CLK),
+			.reset(RESET),
+			.pushReq_IN(wQ_IFID_pushReq),		// from IF
+			.data_IN(wQ_IFID_pushData),			// from IF
+			.fullFlag_OUT(wQ_IFID_full),		// to IF
+			
+			.popReq_IN(wQ_IFID_popReq),			// from ID
+			.data_OUT(wQ_IFID_popData),			// to ID
+			.emptyFlag_OUT(wQ_IFID_empty), 		// to ID
+			.popValid_OUT(wQ_IFID_popValid));	// to ID
+	
+	// Queue popping check
+	/*popCheck #(.DATA_WIDTH(Q_IFID_DATAWIDTH))
+		popCheckIFID  (
+			.clk(CLK), 
+			.reset(RESET), 
+			.popOut(wQ_IFID_popReq), 
+			.dataIn(wQ_IFID_popData), 
+			.emptyIn(wQ_IFID_empty),
+			.popValidIn(wQ_IFID_popValid));
+	*/
+	
    ID ID1( CLK,
         RESET,
         FREEZE,
