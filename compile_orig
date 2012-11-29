@@ -9,4 +9,4 @@ cd obj_dir
 
 make -j -f VMIPS.mk VMIPS
 
-cp VMIPS ../../VMIPS_bkp
+cp VMIPS ../../VMIPS_orig

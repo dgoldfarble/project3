@@ -55,7 +55,7 @@ module MIPS (	R2_output,
    wire [31: 0]   nextInstruction_address_IDIF/*verilator public*/;
    wire           no_fetch/*verilator public*/;
    wire           SYS/*verilator public*/;
-   wire           single_fetch_IDIF/*verilator public*/;
+   // wire           single_fetch_IDIF/*verilator public*/;
 
    //connecting wires (bifurcated signals passing through more than 1 stage)
    wire [31: 0]   writeData1_WBID/*verilator public*/;
@@ -149,7 +149,7 @@ module MIPS (	R2_output,
    wire           FREEZE/*verilator public*/;
    wire [ 31: 0]  Instr1_fIC/*verilator public*/;
    wire [ 31: 0]  Instr2_fIC/*verilator public*/;
-   wire           single_fetch_iCache;
+   // wire           single_fetch_iCache;
 
    wire [  1: 0]  MVECT/*verilator public*/;
    wire [  1: 0]  DataWriteMode;
@@ -161,7 +161,7 @@ module MIPS (	R2_output,
    assign do_fetch = ~no_fetch;
    assign FREEZE = DMISS | IMISS;
    assign DataWriteMode = (Instr_fMEM[31: 26]==40)? 2'b01: ((Instr_fMEM[31: 26]==41)? 2'b10: 2'b00);
-   assign single_fetch_iCache = single_fetch_IDIF;
+   // assign single_fetch_iCache = single_fetch_IDIF;
 
 
   iCache iCache1 (CLK, RESET, SYS, do_fetch, iBlkRead, iBlkWrite, Instr_address_2IM, block_read_fIM, block_write_2IM, Instr1_fIC, Instr2_fIC, IMISS, MVECT);
@@ -180,8 +180,32 @@ module MIPS (	R2_output,
      n = n+1;
    end
 
-	parameter Q_IFID_DATAWIDTH = 32; 	// bits in each element
-	parameter Q_IFID_ADDRWIDTH = 4;		// bits in addr ptr. 2^x elems in queue
+	
+   // Pipeline Stages Instantiation
+   IF IF1( CLK,
+        RESET,
+        .FREEZE(FREEZE || wQ_IFID_full),
+        .fetchNull2(0),//.fetchNull2(fetchNull2_fID),
+        PCA_IFID,
+        CIA_IFID,
+        no_fetch,
+        // /*single_fetch_IDIF*/single_fetch_iCache,
+        .taken_branch1(0),//.taken_branch1(taken_branch1_IDIF),
+        .nextInstruction_address(0),//.nextInstruction_address(nextInstruction_address_IDIF),
+        PC_init,
+        /*Instr1_fIM*/Instr1_fIC,
+        Instr1_IFID,
+        Instr2_IFID,
+        Instr_address_2IM,
+		.tQ_IFID_pushReq(wQ_IFID_pushReq),
+		.tQ_IFID_full(wQ_IFID_full)
+    );
+
+	////////////////////////////////////////////////////////////////////////////
+	// Q_IFID///////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	parameter Q_IFID_DATAWIDTH = 32 + 32 + 32; 	// PCA + CIA + Instr
+	parameter Q_IFID_ADDRWIDTH = 3;		// bits in addr ptr. 2^x elems in queue
 	
 	wire wQ_IFID_empty;
 	wire wQ_IFID_full;
@@ -190,32 +214,14 @@ module MIPS (	R2_output,
 	wire wQ_IFID_popValid;
 	wire [Q_IFID_DATAWIDTH -1:0] wQ_IFID_pushData;
 	wire [Q_IFID_DATAWIDTH -1:0] wQ_IFID_popData;
-	
-   // Pipeline Stages Instantiation
-   IF IF1( CLK,
-        RESET,
-        .FREEZE(FREEZE || wQ_IFID_full),
-        fetchNull2_fID,
-        PCA_IFID,
-        CIA_IFID,
-        no_fetch,
-        /*single_fetch_IDIF*/single_fetch_iCache,
-        taken_branch1_IDIF,
-        nextInstruction_address_IDIF,
-        PC_init,
-        /*Instr1_fIM*/Instr1_fIC,
-        /*Instr1_IFID*/.Instr1_PR(wQ_IFID_pushData),
-        Instr2_IFID,
-        Instr_address_2IM,
-		.Q_IFID_pushEn(wQ_IFID_pushReq),
-		.Q_IFID_full(wQ_IFID_full)
-    );
 		
+	assign wQ_IFID_pushData = {PCA_IFID, CIA_IFID, Instr1_IFID};
+			
 	queue #(.DATA_WIDTH(Q_IFID_DATAWIDTH), 	// in bits
 			.ADDR_WIDTH(Q_IFID_ADDRWIDTH), 	// in bits
 			.SHOW_DEBUG(1),					// True/False
-			.QUEUE_NAME("IFID"))				// Name for debuging
-		qIFID (
+			.QUEUE_NAME("IFID"))			// Name for debuging
+		Q_IFID (
 			.clk(CLK),
 			.reset(RESET),
 			.pushReq_IN(wQ_IFID_pushReq),		// from IF
@@ -225,29 +231,41 @@ module MIPS (	R2_output,
 			.popReq_IN(wQ_IFID_popReq),			// from ID
 			.data_OUT(wQ_IFID_popData),			// to ID
 			.emptyFlag_OUT(wQ_IFID_empty), 		// to ID
-			.popValid_OUT(wQ_IFID_popValid));	// to ID
+			.flush_IN(0));
 	
-	// Queue popping check
-	/*popCheck #(.DATA_WIDTH(Q_IFID_DATAWIDTH))
-		popCheckIFID  (
-			.clk(CLK), 
-			.reset(RESET), 
-			.popOut(wQ_IFID_popReq), 
-			.dataIn(wQ_IFID_popData), 
-			.emptyIn(wQ_IFID_empty),
-			.popValidIn(wQ_IFID_popValid));
-	*/
+	// // Queue popping check
+	// popCheck #(.DATA_WIDTH(Q_IFID_DATAWIDTH))
+		// popCheckIFID  (
+			// .clk(CLK), 
+			// .reset(RESET), 
+			// .popOut(wQ_IFID_popReq), 
+			// .dataIn(wQ_IFID_popData), 
+			// .emptyIn(wQ_IFID_empty));
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+/*
+	DECODE
+		Modifications
+			Freeze logic - should freeze when it cannot push or when it cannot pull
+
+		Issues
+			Syscalls - SYS and no_fetch? - connected to iCache right now thru do_fetch.
+			So this DOES stall IF and i$.
+			
+*/
+	wire wFreezeID;
+	assign wFreezeID = wQ_IFID_empty || wQ_IDREN_full;
 	
    ID ID1( CLK,
         RESET,
-        FREEZE,
+        .FREEZE(wFreezeID),					// *
         ALUSrc1_IDEXE,
-        fetchNull2_fID,
-        single_fetch_IDIF,
+        fetchNull2_fID,						// 2IF - Now hardcoded to 0 at IF
+        // single_fetch_IDIF,				// 2IF - unused. Commented out from everywhere by me 
         Instr1_IDEXE,
         Dest_Value1_IDEXE,
-        no_fetch,
-        SYS,
+        no_fetch,							// 2IF - Problems!
+        SYS,								// 2 i$ and d$
         readDataB1_IDEXE,
         Instr1_10_6_IDEXE,
         do_writeback1_EXEM,
@@ -260,10 +278,10 @@ module MIPS (	R2_output,
         do_writeback1_IDEXE,
         readRegisterA1_IDEXE,
         readRegisterB1_IDEXE,
-        taken_branch1_IDIF,
+        taken_branch1_IDIF,					// 2IF - Removed from IF
         aluResult1_WBID,
         writeRegister1_IDEXE,
-        nextInstruction_address_IDIF,
+        nextInstruction_address_IDIF,		// 2IF - Removed from IF
         Reg_ID,
         R2_output_ID,
         Operand_A1_IDEXE,
@@ -272,13 +290,88 @@ module MIPS (	R2_output,
         MemRead1_IDEXE,
         MemWrite1_IDEXE,
         MemtoReg1_IDEXE,
-        Instr1_IFID,
-        PCA_IFID,
+        .fQ_IFID_Instr1	(wQ_IFID_popData[31:0]),	// fIF Queue
+        .fQ_IFID_PCA	(wQ_IFID_popData[95:64]),	// fIF Queue
         writeData1_WBID,
         R2_input,
-        CIA_IFID
+        .fQ_IFID_CIA	(wQ_IFID_popData[63:32]),	// fIF Queue
+		.tQ_IFID_popReq_OUT (wQ_IFID_popReq),
+		.fQ_IFID_empty_IN	(wQ_IFID_empty),
+		.tQ_IDREN_pushReq_OUT(wQ_IDREN_pushReq),
+		.fQ_IDREN_full_IN	(wQ_IDREN_full)
     );
 
+	
+	////////////////////////////////////////////////////////////////////////////
+	// Q_IDREN (ID-RegRename queue)/////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	parameter Q_IDREN_DATAWIDTH = 32;
+	parameter Q_IDREN_ADDRWIDTH = 3;
+	
+	wire wQ_IDREN_empty;
+	wire wQ_IDREN_full;
+	wire wQ_IDREN_pushReq;
+	wire wQ_IDREN_popReq;
+	wire wQ_IDREN_popValid;
+	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_pushData;
+	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_popData;
+		
+	assign wQ_IDREN_pushData = {Instr1_IDEXE};
+			
+	queue #(.DATA_WIDTH(Q_IDREN_DATAWIDTH),
+			.ADDR_WIDTH(Q_IDREN_ADDRWIDTH),
+			.SHOW_DEBUG(1),					
+			.QUEUE_NAME("IDREN"))
+		Q_IDREN (
+			.clk(CLK),
+			.reset(RESET),
+			.pushReq_IN(wQ_IDREN_pushReq),	
+			.data_IN(wQ_IDREN_pushData),	
+			.fullFlag_OUT(wQ_IDREN_full),	
+			
+			.popReq_IN(wQ_IDREN_popReq),	
+			.data_OUT(wQ_IDREN_popData),	
+			.emptyFlag_OUT(wQ_IDREN_empty),
+			.flush_IN(0));
+	
+	
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// REG RENAME - REN.v///////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// Q_REN-ISS (Reg Rename - Issue)///////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// ISSUE - ISS.v////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// RF_READ - RF_READ.v//////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// EXE - EXE.v?/////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
    EXE EXE1( CLK,
         RESET,
         FREEZE,
@@ -317,6 +410,11 @@ module MIPS (	R2_output,
         aluResult1_EXEM
     );
 
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// MEM - MEM.v?/////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
    MEM MEM1( CLK,
         RESET,
         FREEZE,
@@ -348,6 +446,11 @@ module MIPS (	R2_output,
         data_read1_MEMW
     );
 
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// RF_WRITE - RF_WRITE.v OR WB.v??//////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
    WB WriteBack ( CLK,
         RESET,
         FREEZE,
@@ -365,4 +468,22 @@ module MIPS (	R2_output,
         MemtoReg1_MEMW
     );
 
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// RETIREMENT - RET.v///////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	// COMMIT - COMMIT.v///////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
 endmodule

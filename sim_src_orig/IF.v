@@ -44,7 +44,7 @@ module IF(	CLK,
   reg            [31: 0] FPC;
   reg                    comment;
 
-  initial comment = 0; // shows IF displays
+  initial comment = 1; // shows IF displays
 
   assign Instr_address_2IM   = (taken_branch1)? nextInstruction_address: PC;
   assign PCA                 = PC; 
@@ -81,15 +81,15 @@ module IF(	CLK,
 	$display("=============================================================");
 	/*$display("[IF]:Instr1_fIM:%x\t|Instr2_fIM:%x",Instr1_fIM,Instr2_fIM);
 	/*$display("[IF]:\tsingle_fetch:%x",single_fetch);
-	$display("[IF]:\tPCA:%x",PCA);
+	*/$display("[IF]:\tPCA:%x",PCA);
 	$display("[IF]:\tCIA:%x",CIA);
-	$display("[IF]:\tPC:%x",PC);
+	/*$display("[IF]:\tPC:%x",PC);
 	$display("[IF]:\tFPC:%x",FPC);
 	$display("[IF]:\tInstr_address_2IM:%x",Instr_address_2IM);
 	$display("[IF]:\tnextInstruction_address:%x",nextInstruction_address);
 	$display("[IF]:taken_branch1:%x\t\t|taken_branch2:%x",taken_branch1,taken_branch2);
-	$display("[IF]:Instr1:%x\t\t|Instr2:%x",Instr1,Instr2);
-	$display("[IF]:Instr1_PR:%x\t\t|Instr2_PR:%x",Instr1_PR,Instr2_PR);
+	*/$display("[IF]:Instr1:%x\t\t|Instr2:%x",Instr1,Instr2);
+	/*$display("[IF]:Instr1_PR:%x\t\t|Instr2_PR:%x",Instr1_PR,Instr2_PR);
 	$display("[IF]:Instr1_fIM:%x\t|Instr2_fIM:%x",Instr1_fIM,Instr2_fIM);
 	/**/
      end

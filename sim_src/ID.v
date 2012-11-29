@@ -6,7 +6,7 @@ module ID ( 	CLK,
 		FREEZE,
 		ALUSrc1_PR,
 		fetchNull2_OUT,
-		single_fetch_OUT,
+		// single_fetch_OUT,
 		Instr1_PR,
 		Dest_Value1_PR,
                 insertBubble_OUT,
@@ -35,11 +35,15 @@ module ID ( 	CLK,
 		MemRead1_PR,
 		MemWrite1_PR,
 		MemtoReg1_PR,
-		Instr1,
-		PCA,
+		fQ_IFID_Instr1,				// From IFID Queue
+		fQ_IFID_PCA,				// From IFID Queue
 		writeData1_WB,
 		R2_input,
-		CIA
+		fQ_IFID_CIA,				// From IFID Queue
+		tQ_IFID_popReq_OUT,
+		fQ_IFID_empty_IN,	
+		tQ_IDREN_pushReq_OUT,
+		fQ_IDREN_full_IN		
 		);
    	
 	output reg      [31: 0] R2_output_PR;
@@ -56,7 +60,7 @@ module ID ( 	CLK,
      	output reg      [ 4: 0] readRegisterB1_PR;
         output reg      [ 4: 0] Instr1_10_6_PR;
         output reg              ALUSrc1_PR;
-	output reg 	        single_fetch_OUT;
+	// output reg 	        single_fetch_OUT;
 	output reg 	        taken_branch1_PR;
 	output reg              MemRead1_PR;
 	output reg              MemtoReg1_PR;
@@ -65,16 +69,18 @@ module ID ( 	CLK,
         output reg              insertBubble_OUT;
         output reg              SYS_OUT;
 	output reg              fetchNull2_OUT;
+	output reg			tQ_IFID_popReq_OUT;
+	output reg			tQ_IDREN_pushReq_OUT;
 
 	input           [31: 0] Data1_MEM;
 	input           [31 :0] Data1_WB;
-        input           [31: 0] Instr1;//_IN;
+        input           [31: 0] fQ_IFID_Instr1;//_IN;
 	input           [31: 0] aluResult1;
 	input           [31: 0] aluResult1_WB;
-	input           [31: 0] PCA;
+	input           [31: 0] fQ_IFID_PCA;//wPCA;
 	input           [31: 0] writeData1_WB;
 	input           [31: 0] R2_input;
-	input           [31: 0] CIA;
+	input           [31: 0] fQ_IFID_CIA;//wCIA;
 	input           [ 4: 0] writeRegister1_WB;
 	input           [ 4: 0] writeRegister1_MEM;
 	input                   do_writeback1_WB;
@@ -82,8 +88,9 @@ module ID ( 	CLK,
         input			FREEZE;
 	input                   CLK;
 	input                   RESET;
+	input				fQ_IDREN_full_IN;
+	input				fQ_IFID_empty_IN;
 
-        wire            [31: 0] Instr1;
         wire            [31: 0] com_OpA1;
 	wire            [31: 0] com_OpB1;
 	wire            [31: 0] signExtended_output1;
@@ -125,11 +132,41 @@ module ID ( 	CLK,
 	wire			JMPHazard;
 	wire			NOPHazard;
 
-        reg             [ 1: 0] syscalBubbleCounter;
+	wire 			wCarryOn;
+	assign			wCarryOn = !FREEZE;
+	//////////////////////////////////////////////////////////////////////////
+	//QUEUE BUSINESS//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	
+	//////// Q_IFID
+	wire 	[31:0]	wInstr1, wPCA, wCIA;
+	
+	assign wInstr1 = (tQ_IFID_popReq_OUT)?fQ_IFID_Instr1:0;
+	assign wPCA = (tQ_IFID_popReq_OUT)?fQ_IFID_PCA:0;
+	assign wCIA = (tQ_IFID_popReq_OUT)?fQ_IFID_CIA:0;
+	
+	assign tQ_IFID_popReq_OUT = wCarryOn && RESET;
+	
+	//////// Q_IDREN
+	parameter PUSH_DATAWIDTH = 0; // From module instantiation
+	
+	always @(posedge CLK) begin
+		tQ_IDREN_pushReq_OUT <= wCarryOn && RESET;
+	end
+	
+	
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+    reg             [ 1: 0] syscalBubbleCounter;
 	reg                     comment1;
 	reg                     comment2;  
 	reg                     comment3;
- 	reg			single_fetch_PR;
+ 	// reg			single_fetch_PR;
 	
 	initial begin
 		comment1 = 0; //show isntruction type for core 1
@@ -139,18 +176,18 @@ module ID ( 	CLK,
 
 	assign fetchNull2_OUT = taken_branch1;
 
-	assign CIAp4 = CIA + 32'h00000004;
-	assign PCAp4 = PCA + 32'h00000004;
+	assign CIAp4 = wCIA + 32'h00000004;
+	assign PCAp4 = wPCA + 32'h00000004;
         assign insertBubble_OUT = syscal1 && (syscalBubbleCounter != 0);
         assign SYS_OUT = syscal1 && (syscalBubbleCounter == 0);
-	assign Jump_address1=(jumpRegister_Flag1)?{CIA[31:28],Instr1[25:0],2'b0}:com_OpA1;//readDataA1;
-	assign signExtended_output1 = (sign_or_zero_Flag1)?{{16{Instr1[15]}},Instr1[15:0]}:{16'b0,Instr1[15:0]};
-	assign Shift_addResult1 = PCA+(signExtended_output1<<2);	
-	assign nia1 = (jump1)? Jump_address1: ((taken_branch1)? Shift_addResult1: PCA);
+	assign Jump_address1=(jumpRegister_Flag1)?{wCIA[31:28],wInstr1[25:0],2'b0}:com_OpA1;//readDataA1;
+	assign signExtended_output1 = (sign_or_zero_Flag1)?{{16{wInstr1[15]}},wInstr1[15:0]}:{16'b0,wInstr1[15:0]};
+	assign Shift_addResult1 = wPCA+(signExtended_output1<<2);	
+	assign nia1 = (jump1)? Jump_address1: ((taken_branch1)? Shift_addResult1: wPCA);
 	assign nextInstruction_address = nia1;
-	assign readRegisterA1=Instr1[25:21];
-	assign readRegisterB1=Instr1[20:16];
-	assign writeRegister1 = (RegDst1)?Instr1[15:11]:((link1)?5'b11111:((syscal1)?5'b00000:Instr1[20:16]));
+	assign readRegisterA1=wInstr1[25:21];
+	assign readRegisterB1=wInstr1[20:16];
+	assign writeRegister1 = (RegDst1)?wInstr1[15:11]:((link1)?5'b11111:((syscal1)?5'b00000:wInstr1[20:16]));
 	assign readDataA1 = Reg[readRegisterA1];
 	assign readDataB1 = Reg[readRegisterB1];
 	assign Operand_B1 = (ALUSrc1)?signExtended_output1:readDataB1;
@@ -175,7 +212,7 @@ module ID ( 	CLK,
 		else com_OpB1 = Operand_B1;
 	end
 	
-	compare compare1(jump1,com_OpA1,com_OpB1,Instr1,taken_branch1);
+	compare compare1(jump1,com_OpA1,com_OpB1,wInstr1,taken_branch1);
 	/* TA: These signals may be used for superscalar operation
 	assign MemHazard = 
 	assign SysHazard =
@@ -189,14 +226,14 @@ module ID ( 	CLK,
 	//CONTROLLER1
 	//*note, syscall, and all link instructions have been assigned alucontrol of addi
 	always begin
-     		opcode1 = Instr1[31:26];
-     		format1 = Instr1[25:21];
-     		rt1     = Instr1[20:16];
-     		funct1  = Instr1[5:0];
+     		opcode1 = wInstr1[31:26];
+     		format1 = wInstr1[25:21];
+     		rt1     = wInstr1[20:16];
+     		funct1  = wInstr1[5:0];
 		case ( opcode1 )
 		     6'b000000: begin //SPECIAL
                     	case ( funct1 )
-                        		6'b000000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000001000010011;if(comment1)$display("[1]sll,nop\n");end//SLL,NOP
+                    6'b000000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000001000010011;if(comment1)$display("[1]sll,nop\n");end//SLL,NOP
 					6'b000010: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000001000011011;if(comment1)$display("[1]srl\n");end//SRL
 					6'b000011: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000001000011001;if(comment1)$display("[1]sra\n");end//SRA
 					6'b000100: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000001000010100;if(comment1)$display("[1]sllv\n");end//SLLV
@@ -257,13 +294,13 @@ module ID ( 	CLK,
 			  		5'b00100: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000000010111000;if(comment1)$display("[1]mtc1\n");end//MTC1
 			  		5'b00110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000000010110100;if(comment1)$display("[1]ctc1\n");end//CTC1
 			  		5'b01000:begin
-			       			case( Instr1[16] )
+			       			case( wInstr1[16] )
 			            			1'b1: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000100000010011101;if(comment1)$display("[1]bc1t\n");end//BC1T
 				    			1'b0: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000100000010001111;if(comment1)$display("[1]bc1f\n");end//BC1F
 			       			endcase
 			  		end
 			  		5'b10000:begin 
-						if( Instr1[7:4] == 4'b0011 ) begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000000000011111;if(comment1)$display("[1]fp c.cond\n");end//fp c.cond
+						if( wInstr1[7:4] == 4'b0011 ) begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000000000011111;if(comment1)$display("[1]fp c.cond\n");end//fp c.cond
 			       			else begin
 			        			case( funct1 )
 				         			6'b000000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b010000000000011011;if(comment1)$display("[1]fp add\n");end//fp add
@@ -311,14 +348,14 @@ module ID ( 	CLK,
 			R2_output_PR <= 32'b0;
 			nextInstruction_address_PR <= 32'b0;
                         syscalBubbleCounter <= 2'b11; /// only allowed here
-			single_fetch_PR <= 1'b0;
+			// single_fetch_PR <= 1'b0;
      		   end
     		else if(!FREEZE)
 		   begin
 			R2_output_PR <= (insertBubble_OUT)? 0: R2_output;
 			nextInstruction_address_PR <= (insertBubble_OUT)? 0: nextInstruction_address;
                         syscalBubbleCounter <= (syscal1)? syscalBubbleCounter - 1: 2'b11;
-			single_fetch_PR <= single_fetch_OUT;
+			// single_fetch_PR <= single_fetch_OUT;
 		end
 	end
 	//REGISTER FILE
@@ -351,7 +388,7 @@ module ID ( 	CLK,
       		   end
     		else if(!FREEZE)
 		   begin
-			Operand_A1_PR <= (link1)?PCA:((syscal1)?R2_input:readDataA1);
+			Operand_A1_PR <= (link1)?wPCA:((syscal1)?R2_input:readDataA1);
 			Operand_B1_PR <= (link1)?32'h00000004:((syscal1)?32'h00000000:Operand_B1);
 			writeRegister1_PR <= writeRegister1;
 			taken_branch1_PR <= taken_branch1;
@@ -362,15 +399,15 @@ module ID ( 	CLK,
 			readRegisterA1_PR <= (link1 || syscal1)?5'b00000:readRegisterA1;
 			readRegisterB1_PR <= (ALUSrc1 || link1 || syscal1)?5'b00000:readRegisterB1;
 			do_writeback1_PR <= ((RegWrite1)&&(writeRegister1!=5'b00000)&&(ALU_control1!=6'b110100))||MemtoReg1;
-                        Instr1_10_6_PR <= Instr1[10: 6];
+                        Instr1_10_6_PR <= wInstr1[10: 6];
 			readDataB1_PR <= readDataB1;
                         Dest_Value1_PR <= Reg[writeRegister1];
-			Instr1_PR <= Instr1;
+			Instr1_PR <= wInstr1;
 			ALUSrc1_PR <= ALUSrc1;
                    end
 	end
 
-	always  /*@ (posedge CLK)*/ begin
+	always  @ (posedge CLK) begin
 	   if(comment3) begin
 	/*	$display("=============================================================");
 		$display("[ID]:Read Register A1:%d\t\t|Read Register A2:%d",readRegisterA1,readRegisterA2);
@@ -381,11 +418,11 @@ module ID ( 	CLK,
 		$display("[ID]:\tsingle_fetch_OUT:%x",single_fetch_OUT);
 		$display("[ID]:\tsingle_fetch_PR:%x",single_fetch_PR);
                 $display("[ID]:\tSYS_OUT:%x",SYS_OUT);
-		$display("[ID]:\tPCA:%x",PCA);
-		$display("[ID]:\tCIA:%x",CIA);
-		$display("[ID]:\tbranch1:%x\n[ID]:\tbranch2:%x",branch1,branch2);/*
-		$display("[ID]:\tInstr1:%x\n[ID]:\tInstr2:%x",Instr1,Instr2);/*
-		$display("[ID]:\tnextInstruction_address:%x",nextInstruction_address);
+		*/$display("[ID]:\tPCA:%x",wPCA);
+		$display("[ID]:\tCIA:%x",wCIA);
+		/*$display("[ID]:\tbranch1:%x\n[ID]:\tbranch2:%x",branch1,branch2);
+		*/$display("[ID]:\tInstr1:%x",wInstr1);
+		/*$display("[ID]:\tnextInstruction_address:%x",nextInstruction_address);
                 $display("[ID]:syscal1:%x\t\t\t|syscal2:%x",syscal1,syscal2);
 	 	$display("[ID]:writeRegister1_PR:%x\t|writeRegister2_PR:%x",writeRegister1_PR,writeRegister2_PR); 
 		$display("[ID]:com_OpA1:%x\t\t|com_OpA2:%x",com_OpA1,com_OpA2);
@@ -405,11 +442,11 @@ module ID ( 	CLK,
                 $display("[ID]:writeRegister1_WB:%x\t|writeRegister2_WB:%x",writeRegister1_WB,writeRegister2_WB);	
 		$display("[ID]:readRegisterA1_PR:%x\t|readRegisterA2_PR:%x",readRegisterA1_PR,readRegisterA2_PR);
 		$display("[ID]:readRegisterB1_PR:%x\t|readRegisterB2_PR:%x",readRegisterB1_PR,readRegisterB2_PR);		
-		$display("[ID]:Operand_A1:%x\t|Operand_A2:%x",(link1)?PCA:((syscal1)?R2_input:readDataA1), (link2)?PCA:((syscal2)?R2_input:readDataA2));
+		$display("[ID]:Operand_A1:%x\t|Operand_A2:%x",(link1)?wPCA:((syscal1)?R2_input:readDataA1), (link2)?wPCA:((syscal2)?R2_input:readDataA2));
 		$display("[ID]:readDataA1:%x\t|readDataA2:%x",readDataA1,readDataA2);
 		$display("[ID]:Operand_B1:%x\t|Operand_B2:%x",(link1)?32'h00000008:((syscal1)?32'h00000000:Operand_B1),(link2)?32'h00000008:((syscal2)?32'h00000000:Operand_B2));
 		$display("[ID]:readDataB1:%x\t|readDataB2:%x",readDataB1,readDataB2);
-		$display("[ID]:Instr1:%x\t\t|Instr2:%x",Instr1,Instr2);
+		$display("[ID]:wInstr1:%x\t\t|Instr2:%x",wInstr1,Instr2);
 		$display("[ID]:Jump_address1:%x\t|Jump_address2:%x",Jump_address1,Jump_address2);
 		$display("[ID]:Shift_addResult1:%x\t|Shift_addResult2:%x",Shift_addResult1,Shift_addResult2);
 		$display("[ID]:Data1_MEM:%x\t\t|Data1_MEM:%x",Data1_MEM,Data2_MEM);

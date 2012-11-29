@@ -202,6 +202,7 @@ VL_CTOR_IMP(VMIPS_MIPS) {
     __PVT__ID1__DOT__syscal1 = VL_RAND_RESET_I(1);
     __PVT__ID1__DOT__syscalBubbleCounter = VL_RAND_RESET_I(2);
     __PVT__ID1__DOT__comment1 = VL_RAND_RESET_I(1);
+    __PVT__ID1__DOT__comment3 = VL_RAND_RESET_I(1);
     __PVT__EXE1__DOT__aluResult1 = VL_RAND_RESET_I(32);
     __PVT__EXE1__DOT__OpA1 = VL_RAND_RESET_I(32);
     __PVT__EXE1__DOT__OpB1 = VL_RAND_RESET_I(32);
@@ -241,16 +242,17 @@ void VMIPS_MIPS::_initial__TOP__v(VMIPS__Syms* __restrict vlSymsp) {
     // Body
     // INITIAL at ID.v:134
     vlSymsp->TOP__v.__PVT__ID1__DOT__comment1 = 0;
+    vlSymsp->TOP__v.__PVT__ID1__DOT__comment3 = 1;
 }
 
 void VMIPS_MIPS::_settle__TOP__v__1(VMIPS__Syms* __restrict vlSymsp) {
     VL_DEBUG_IF(VL_PRINTF("      VMIPS_MIPS::_settle__TOP__v__1\n"); );
     VMIPS* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
-    // ALWAYS at WB.v:65
-    // ALWAYS at EXE.v:156
-    // ALWAYS at dCache.v:93
     // ALWAYS at iCache.v:86
+    // ALWAYS at dCache.v:93
+    // ALWAYS at EXE.v:156
+    // ALWAYS at WB.v:65
 }
 
 void VMIPS_MIPS::_sequent__TOP__v__2(VMIPS__Syms* __restrict vlSymsp) {
@@ -262,6 +264,12 @@ void VMIPS_MIPS::_sequent__TOP__v__2(VMIPS__Syms* __restrict vlSymsp) {
     vlSymsp->TOP__v.__Vdly__dCache1__DOT__waitCount 
 	= vlSymsp->TOP__v.__PVT__dCache1__DOT__waitCount;
     // ALWAYS at IF.v:79
+    VL_WRITEF("=============================================================\n");
+    VL_WRITEF("[IF]:\tPCA:%x\n",32,vlSymsp->TOP__v.__PVT__IF1__DOT__PC);
+    VL_WRITEF("[IF]:\tCIA:%x\n",32,vlSymsp->TOP__v.__PVT__IF1__DOT__FPC);
+    VL_WRITEF("[IF]:Instr1:%x\t\t|Instr2:%x\n",32,vlSymsp->TOP__v.Instr2_IFID,
+	      32,((IData)(vlSymsp->TOP__v.fetchNull2_fID)
+		   ? 0 : vlSymsp->TOP__v.Instr1_fIC));
     // ALWAYS at instr_cache_core.v:191
     if ((1 & ((~ (IData)(vlTOPp->RESET)) | (IData)(vlSymsp->TOP__v.SYS)))) {
 	vlSymsp->TOP__v.__PVT__iCache1__DOT__cc0__DOT__valid[0] = 0;
@@ -447,6 +455,12 @@ void VMIPS_MIPS::_sequent__TOP__v__2(VMIPS__Syms* __restrict vlSymsp) {
     if (vlSymsp->TOP__v.do_writeback1_WBID) {
 	vlSymsp->TOP__v.Reg_ID[(IData)(vlSymsp->TOP__v.writeRegister1_WBID)] 
 	    = vlSymsp->TOP__v.writeData1_WBID;
+    }
+    // ALWAYS at ID.v:373
+    if (VL_UNLIKELY(vlSymsp->TOP__v.__PVT__ID1__DOT__comment3)) {
+	VL_WRITEF("[ID]:\tPCA:%x\n",32,vlSymsp->TOP__v.PCA_IFID);
+	VL_WRITEF("[ID]:\tCIA:%x\n",32,vlSymsp->TOP__v.CIA_IFID);
+	VL_WRITEF("[ID]:\tInstr1:%x\n",32,vlSymsp->TOP__v.Instr1_IFID);
     }
     // ALWAYS at cache_core.v:125
     if ((1 & ((~ (IData)(vlTOPp->RESET)) | (IData)(vlSymsp->TOP__v.SYS)))) {
@@ -2101,8 +2115,8 @@ void VMIPS_MIPS::_sequent__TOP__v__3(VMIPS__Syms* __restrict vlSymsp) {
     VL_DEBUG_IF(VL_PRINTF("      VMIPS_MIPS::_sequent__TOP__v__3\n"); );
     VMIPS* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
-    vlSymsp->TOP__v.__Vdly__Instr2_IFID = vlSymsp->TOP__v.Instr2_IFID;
     vlSymsp->TOP__v.__Vdly__IF1__DOT__FPC = vlSymsp->TOP__v.__PVT__IF1__DOT__FPC;
+    vlSymsp->TOP__v.__Vdly__Instr2_IFID = vlSymsp->TOP__v.Instr2_IFID;
     vlSymsp->TOP__v.__Vdly__IF1__DOT__PC = vlSymsp->TOP__v.__PVT__IF1__DOT__PC;
     vlSymsp->TOP__v.__Vdly__ID1__DOT__syscalBubbleCounter 
 	= vlSymsp->TOP__v.__PVT__ID1__DOT__syscalBubbleCounter;

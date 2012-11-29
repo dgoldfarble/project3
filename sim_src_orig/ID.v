@@ -134,7 +134,7 @@ module ID ( 	CLK,
 	initial begin
 		comment1 = 0; //show isntruction type for core 1
 		comment2 = 0; //show isntruction type for core 2
-		comment3 = 0; //show ID displays
+		comment3 =1; //show ID displays
 	end
 
 	assign fetchNull2_OUT = taken_branch1;
@@ -370,7 +370,7 @@ module ID ( 	CLK,
                    end
 	end
 
-	always  /*@ (posedge CLK)*/ begin
+	always  @ (posedge CLK) begin
 	   if(comment3) begin
 	/*	$display("=============================================================");
 		$display("[ID]:Read Register A1:%d\t\t|Read Register A2:%d",readRegisterA1,readRegisterA2);
@@ -381,11 +381,11 @@ module ID ( 	CLK,
 		$display("[ID]:\tsingle_fetch_OUT:%x",single_fetch_OUT);
 		$display("[ID]:\tsingle_fetch_PR:%x",single_fetch_PR);
                 $display("[ID]:\tSYS_OUT:%x",SYS_OUT);
-		$display("[ID]:\tPCA:%x",PCA);
+		*/$display("[ID]:\tPCA:%x",PCA);
 		$display("[ID]:\tCIA:%x",CIA);
-		$display("[ID]:\tbranch1:%x\n[ID]:\tbranch2:%x",branch1,branch2);/*
-		$display("[ID]:\tInstr1:%x\n[ID]:\tInstr2:%x",Instr1,Instr2);/*
-		$display("[ID]:\tnextInstruction_address:%x",nextInstruction_address);
+		/*$display("[ID]:\tbranch1:%x\n[ID]:\tbranch2:%x",branch1,branch2);
+		*/$display("[ID]:\tInstr1:%x",Instr1);
+		/*$display("[ID]:\tnextInstruction_address:%x",nextInstruction_address);
                 $display("[ID]:syscal1:%x\t\t\t|syscal2:%x",syscal1,syscal2);
 	 	$display("[ID]:writeRegister1_PR:%x\t|writeRegister2_PR:%x",writeRegister1_PR,writeRegister2_PR); 
 		$display("[ID]:com_OpA1:%x\t\t|com_OpA2:%x",com_OpA1,com_OpA2);

@@ -122,10 +122,11 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__PVT__ID1__DOT__syscal1,0,0);
     VL_SIG8(__PVT__ID1__DOT__syscalBubbleCounter,1,0);
     VL_SIG8(__PVT__ID1__DOT__comment1,0,0);
+    VL_SIG8(__PVT__ID1__DOT__comment3,0,0);
     VL_SIG8(__PVT__EXE1__DOT__ALU1__DOT__i,4,0);
     VL_SIG8(__PVT__MEM1__DOT__ALU_control,5,0);
     VL_SIG8(__PVT__MEM1__DOT__select1_WB,0,0);
-    //char	__VpadToAlign253[3];
+    //char	__VpadToAlign254[2];
     VL_SIG(R2_output_ID,31,0);
     VL_SIG(Instr_fMEM,31,0);
     VL_SIG(Instr_address_2IM,31,0);
