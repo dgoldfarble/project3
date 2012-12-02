@@ -20,12 +20,11 @@ module ID ( 	CLK,
                 writeRegister1_WB,
                 Data1_WB,
 		aluResult1,
-		do_writeback1_PR,
+		do_writeback1_PR, // Used in rename
 		readRegisterA1_PR,
 		readRegisterB1_PR,
 		taken_branch1_PR,
 		aluResult1_WB,
-	 	writeRegister1_PR,
 		nextInstruction_address_PR,
 		Reg,
 		R2_output_PR,
@@ -43,7 +42,11 @@ module ID ( 	CLK,
 		tQ_IFID_popReq_OUT,
 		fQ_IFID_empty_IN,	
 		tQ_IDREN_pushReq_OUT,
-		fQ_IDREN_full_IN		
+		fQ_IDREN_full_IN,
+
+		// to rename
+	 	writeRegister1_PR,
+		isRegWriteInstr_OUT
 		);
    	
 	output reg      [31: 0] R2_output_PR;
@@ -55,7 +58,6 @@ module ID ( 	CLK,
 	output reg      [31: 0] readDataB1_PR;
 	output reg      [31: 0] Instr1_PR;
 	output reg      [ 5: 0] ALU_control1_PR;
-	output reg      [ 4: 0] writeRegister1_PR;
      	output reg      [ 4: 0] readRegisterA1_PR;
      	output reg      [ 4: 0] readRegisterB1_PR;
         output reg      [ 4: 0] Instr1_10_6_PR;
@@ -71,6 +73,9 @@ module ID ( 	CLK,
 	output reg              fetchNull2_OUT;
 	output reg			tQ_IFID_popReq_OUT;
 	output reg			tQ_IDREN_pushReq_OUT;
+	output reg  [4: 0] writeRegister1_PR;
+	output reg [1:0] isRegWriteInstr_OUT;
+	
 
 	input           [31: 0] Data1_MEM;
 	input           [31 :0] Data1_WB;
@@ -153,6 +158,14 @@ module ID ( 	CLK,
 	always @(posedge CLK) begin
 		tQ_IDREN_pushReq_OUT <= wCarryOn && RESET;
 	end
+	
+	
+	//////////////////////////////////////////////////////////////////////////
+	//Things to pass on to Rename/////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	
+	assign isRegWriteInstr_OUT = {do_writeback1_PR, RegDst1};
+	
 	
 	
 	//////////////////////////////////////////////////////////////////////////
@@ -318,25 +331,25 @@ module ID ( 	CLK,
 		          		default: $display("Not an Instruction!");
 		 		endcase
 			end
-			6'b100000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100100001;if(comment1)$display("[1]lb\n");end//LB
-			6'b100001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100101011;if(comment1)$display("[1]lh\n");end//LH
-			6'b100010: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100101101;if(comment1)$display("[1]lwl\n");end//LWL
-			6'b100011: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100111101;if(comment1)$display("[1]lw\n");end//LW
-	        	6'b110000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100111101;if(comment1)$display("[1]lwc0\n");end//LWC0
-			6'b100100: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100101010;if(comment1)$display("[1]lbu\n");end//LBU
-			6'b100101: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100101100;if(comment1)$display("[1]lhu\n");end//LHU
-			6'b100110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011011100101110;if(comment1)$display("[1]lwr\n");end//LWR
-			6'b101000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110100101111;if(comment1)$display("[1]sb\n");end//SB
-			6'b101001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110100110000;if(comment1)$display("[1]sh\n");end//SH
-			6'b101010: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110100110010;if(comment1)$display("[1]swl\n");end//SWL
-			6'b101011: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110100110001;if(comment1)$display("[1]sw\n");end//SW
-	        	6'b111000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110100110001;if(comment1)$display("[1]swc0\n");end//SWC0
-			6'b101110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110100110011;if(comment1)$display("[1]swr\n");end//SWR
-			6'b110001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000011010010110101;if(comment1)$display("[1]lwc1\n");end//LWC1
-			6'b111001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000000110010111001;if(comment1)$display("[1]swc1\n");end//SWC1
-			6'b010100: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000100000010111010;if(comment1)$display("[1]beql\n");end//BEQL
-			6'b010110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000100000010111011;if(comment1)$display("[1]blezl\n");end//BLEZL
-			6'b010101: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 18'b000100000010111100;if(comment1)$display("[1]bnel\n");end//BNEL
+			6'b100000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100100001;if(comment1)$display("[1]lb\n");end//LB
+			6'b100001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100101011;if(comment1)$display("[1]lh\n");end//LH
+			6'b100010: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100101101;if(comment1)$display("[1]lwl\n");end//LWL
+			6'b100011: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100111101;if(comment1)$display("[1]lw\n");end//LW
+	        	6'b110000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 	18'b000011011100111101;if(comment1)$display("[1]lwc0\n");end//LWC0
+			6'b100100: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100101010;if(comment1)$display("[1]lbu\n");end//LBU
+			6'b100101: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100101100;if(comment1)$display("[1]lhu\n");end//LHU
+			6'b100110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011011100101110;if(comment1)$display("[1]lwr\n");end//LWR
+			6'b101000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000000110100101111;if(comment1)$display("[1]sb\n");end//SB
+			6'b101001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000000110100110000;if(comment1)$display("[1]sh\n");end//SH
+			6'b101010: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000000110100110010;if(comment1)$display("[1]swl\n");end//SWL
+			6'b101011: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000000110100110001;if(comment1)$display("[1]sw\n");end//SW
+	        	6'b111000: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 	18'b000000110100110001;if(comment1)$display("[1]swc0\n");end//SWC0
+			6'b101110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000000110100110011;if(comment1)$display("[1]swr\n");end//SWR
+			6'b110001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000011010010110101;if(comment1)$display("[1]lwc1\n");end//LWC1
+			6'b111001: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000000110010111001;if(comment1)$display("[1]swc1\n");end//SWC1
+			6'b010100: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000100000010111010;if(comment1)$display("[1]beql\n");end//BEQL
+			6'b010110: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000100000010111011;if(comment1)$display("[1]blezl\n");end//BLEZL
+			6'b010101: begin {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1} = 		18'b000100000010111100;if(comment1)$display("[1]bnel\n");end//BNEL
 			default: $display("Not an Instruction!");
 		endcase
 	end
@@ -368,7 +381,7 @@ module ID ( 	CLK,
 	//PIPE REGISTERS 1
 	always @ (posedge CLK or negedge RESET) begin
 		if(!RESET || insertBubble_OUT) 
-	           begin
+		   begin
 			Operand_A1_PR <= 32'b0;
 			Operand_B1_PR <= 32'b0;
 			writeRegister1_PR <= 5'b0;
@@ -385,7 +398,7 @@ module ID ( 	CLK,
                         Dest_Value1_PR <= 32'b0;
 			Instr1_PR <= 32'b0;
 			ALUSrc1_PR <= 1'b0;
-      		   end
+		   end
     		else if(!FREEZE)
 		   begin
 			Operand_A1_PR <= (link1)?wPCA:((syscal1)?R2_input:readDataA1);
@@ -399,12 +412,12 @@ module ID ( 	CLK,
 			readRegisterA1_PR <= (link1 || syscal1)?5'b00000:readRegisterA1;
 			readRegisterB1_PR <= (ALUSrc1 || link1 || syscal1)?5'b00000:readRegisterB1;
 			do_writeback1_PR <= ((RegWrite1)&&(writeRegister1!=5'b00000)&&(ALU_control1!=6'b110100))||MemtoReg1;
-                        Instr1_10_6_PR <= wInstr1[10: 6];
+			Instr1_10_6_PR <= wInstr1[10: 6];
 			readDataB1_PR <= readDataB1;
-                        Dest_Value1_PR <= Reg[writeRegister1];
+			Dest_Value1_PR <= Reg[writeRegister1];
 			Instr1_PR <= wInstr1;
 			ALUSrc1_PR <= ALUSrc1;
-                   end
+		   end
 	end
 
 	always  @ (posedge CLK) begin

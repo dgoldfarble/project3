@@ -68,7 +68,7 @@ module MIPS (	R2_output,
    wire [31: 0]   Dest_Value2_IDEXE/*verilator public*/;
    wire [31: 0]   Dest_Value1_EXEM/*verilator public*/;
    wire [31: 0]   Dest_Value2_EXEM/*verilator public*/;
-   wire [31: 0]   Instr1_IDEXE/*verilator public*/;
+   wire [31: 0]   Instr1_IDREN/*verilator public*/;
    wire [31: 0]   Instr2_IDEXE/*verilator public*/;
    wire [31: 0]   Instr1_EXEM/*verilator public*/;
    wire [31: 0]   Instr2_EXEM/*verilator public*/;
@@ -98,7 +98,7 @@ module MIPS (	R2_output,
    wire [ 5: 0]   ALU_control2_IDEXE/*verilator public*/;
    wire [ 5: 0]   ALU_control1_EXEM/*verilator public*/;
    wire [ 5: 0]   ALU_control2_EXEM/*verilator public*/;
-   wire [ 4: 0]   writeRegister1_IDEXE/*verilator public*/;
+   wire [ 4: 0]   wWrRegID_IDREN/*verilator public*/;
    wire [ 4: 0]   writeRegister2_IDEXE/*verilator public*/;
    wire [ 4: 0]   writeRegister1_EXEM/*verilator public*/;
    wire [ 4: 0]   writeRegister2_EXEM/*verilator public*/;
@@ -151,6 +151,8 @@ module MIPS (	R2_output,
    wire [ 31: 0]  Instr2_fIC/*verilator public*/;
    // wire           single_fetch_iCache;
 
+   wire [1:0]     isRegWrInstr_IDREN/*verilator public*/;
+   
    wire [  1: 0]  MVECT/*verilator public*/;
    wire [  1: 0]  DataWriteMode;
    wire [ 31: 0]  data_read_fDC;
@@ -219,7 +221,7 @@ module MIPS (	R2_output,
 			
 	queue #(.DATA_WIDTH(Q_IFID_DATAWIDTH), 	// in bits
 			.ADDR_WIDTH(Q_IFID_ADDRWIDTH), 	// in bits
-			.SHOW_DEBUG(1),					// True/False
+			.SHOW_DEBUG(0),					// True/False
 			.QUEUE_NAME("IFID"))			// Name for debuging
 		Q_IFID (
 			.clk(CLK),
@@ -259,15 +261,15 @@ module MIPS (	R2_output,
    ID ID1( CLK,
         RESET,
         .FREEZE(wFreezeID),					// *
-        ALUSrc1_IDEXE,
+        ALUSrc1_IDEXE,			// 2REN
         fetchNull2_fID,						// 2IF - Now hardcoded to 0 at IF
         // single_fetch_IDIF,				// 2IF - unused. Commented out from everywhere by me 
-        Instr1_IDEXE,
-        Dest_Value1_IDEXE,
+        Instr1_IDREN,			// 2REN
+        Dest_Value1_IDEXE,		// 2REN
         no_fetch,							// 2IF - Problems!
         SYS,								// 2 i$ and d$
-        readDataB1_IDEXE,
-        Instr1_10_6_IDEXE,
+        readDataB1_IDEXE,		// 2REN	
+        Instr1_10_6_IDEXE,		// 2REN
         do_writeback1_EXEM,
         writeRegister1_EXEM,
         writeData1_MID,
@@ -275,21 +277,20 @@ module MIPS (	R2_output,
         writeRegister1_WBID,
         writeData1_WBID,
         aluResult1_EXEID,
-        do_writeback1_IDEXE,
-        readRegisterA1_IDEXE,
-        readRegisterB1_IDEXE,
+        do_writeback1_IDEXE,	// 2REN
+        readRegisterA1_IDEXE,	// 2REN
+        readRegisterB1_IDEXE,	// 2REN
         taken_branch1_IDIF,					// 2IF - Removed from IF
         aluResult1_WBID,
-        writeRegister1_IDEXE,
         nextInstruction_address_IDIF,		// 2IF - Removed from IF
         Reg_ID,
         R2_output_ID,
-        Operand_A1_IDEXE,
-        Operand_B1_IDEXE,
-        ALU_control1_IDEXE,
-        MemRead1_IDEXE,
-        MemWrite1_IDEXE,
-        MemtoReg1_IDEXE,
+        Operand_A1_IDEXE,		// 2REN
+        Operand_B1_IDEXE,		// 2REN
+        ALU_control1_IDEXE,		// 2REN
+        MemRead1_IDEXE,			// 2REN
+        MemWrite1_IDEXE,		// 2REN	
+        MemtoReg1_IDEXE,		// 2REN
         .fQ_IFID_Instr1	(wQ_IFID_popData[31:0]),	// fIF Queue
         .fQ_IFID_PCA	(wQ_IFID_popData[95:64]),	// fIF Queue
         writeData1_WBID,
@@ -298,14 +299,26 @@ module MIPS (	R2_output,
 		.tQ_IFID_popReq_OUT (wQ_IFID_popReq),
 		.fQ_IFID_empty_IN	(wQ_IFID_empty),
 		.tQ_IDREN_pushReq_OUT(wQ_IDREN_pushReq),
-		.fQ_IDREN_full_IN	(wQ_IDREN_full)
+		.fQ_IDREN_full_IN	(wQ_IDREN_full),
+		
+		// to rename
+	 	.writeRegister1_PR(wWrRegID_IDREN),
+		.isRegWriteInstr_OUT(isRegWrInstr_IDREN)
     );
-
+	/*
+EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM,
+	Dest_Value1_IDEXE,Dest_Value1_EXEM,readDataB1_IDEXE,readDataB1_EXEM,aluResult1_EXEID,
+	do_writeback1_WBEXE,writeRegister1_WBEXE,writeData1_WBEXE,ALU_control1_EXEM,
+	ALU_control1_IDEXE,writeData1_WBID,writeRegister1_MEMW,do_writeback1_MEMW,do_writeback1_EXEM,
+	do_writeback1_IDEXE,readRegisterA1_IDEXE,readRegisterB1_IDEXE,wWrRegID_IDREN,
+	writeRegister1_EXEM,Instr1_10_6_IDEXE,MemRead1_IDEXE,MemWrite1_IDEXE,MemRead1_EXEM,
+	MemWrite1_EXEM,Operand_A1_IDEXE,Operand_B1_IDEXE,MemtoReg1_IDEXE,MemtoReg1_EXEM,aluResult1_EXEM
+);*/
 	
 	////////////////////////////////////////////////////////////////////////////
 	// Q_IDREN (ID-RegRename queue)/////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-	parameter Q_IDREN_DATAWIDTH = 32;
+
 	parameter Q_IDREN_ADDRWIDTH = 3;
 	
 	wire wQ_IDREN_empty;
@@ -313,14 +326,19 @@ module MIPS (	R2_output,
 	wire wQ_IDREN_pushReq;
 	wire wQ_IDREN_popReq;
 	wire wQ_IDREN_popValid;
-	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_pushData;
 	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_popData;
-		
-	assign wQ_IDREN_pushData = {Instr1_IDEXE};
+	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_pushData;
+	
+	parameter Q_IDREN_DATAWIDTH = 1+1+5 + 2 + 32;
+	assign wQ_IDREN_pushData = {MemWrite1_IDEXE,	//1
+								MemRead1_IDEXE, 	//1
+								wWrRegID_IDREN, 	//5
+								isRegWrInstr_IDREN, //2
+								Instr1_IDREN};		//32
 			
 	queue #(.DATA_WIDTH(Q_IDREN_DATAWIDTH),
 			.ADDR_WIDTH(Q_IDREN_ADDRWIDTH),
-			.SHOW_DEBUG(1),					
+			.SHOW_DEBUG(0),				
 			.QUEUE_NAME("IDREN"))
 		Q_IDREN (
 			.clk(CLK),
@@ -342,9 +360,88 @@ module MIPS (	R2_output,
 	// REG RENAME - REN.v///////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
 	
+	parameter PHYSREGS_DEPTH = 6;				// 64 phys regs
+	parameter ARCHREGS_DEPTH = 5;				// 32 architectural regs
+	
+	// Issue stage input data width
+	parameter RENISSUE_WIDTH = 	Q_IDREN_DATAWIDTH + PHYSREGS_DEPTH;	
+	
+	// Issue stage input data width
+	parameter RENROB_WIDTH = 	RENISSUE_WIDTH;	
+	
+	wire wFreezeREN;
+	assign wFreezeREN = wQ_IDREN_empty || fROB_full_IN;
+	
+	REN #(	.IDREN_POP_WIDTH(Q_IDREN_DATAWIDTH),
+			.PHYSREGS_DEPTH(PHYSREGS_DEPTH),
+			.ARCHREGS_DEPTH(ARCHREGS_DEPTH),
+			.RENISSUE_WIDTH(RENISSUE_WIDTH),
+			.RENROB_WIDTH(RENROB_WIDTH))
+	rename (CLK, RESET, 
+	
+		.FREEZE(wFreezeREN),
+		
+		// Decode
+		.tQ_IDREN_popReq_OUT (wQ_IDREN_popReq),
+		.fQ_IDREN_empty_IN	(wQ_IDREN_empty),
+		.fQ_IDREN_popData_IN (wQ_IDREN_popData),
+		
+		// Issue/LSQ
+		.tIQ_pushReq_OUT(wtIQ_pushReq_OUT),
+		.tIQ_pushData_OUT(wtIQ_pushData_OUT),
+		.fIQ_full_IN(wfIQ_full),
+		.tLSQ_pushReq_OUT(wtLSQ_pushReq_OUT),
+		.tLSQ_pushData_OUT(wtLSQ_pushData_OUT),
+		.fLSQ_full_IN(wfLSQ_full),
+		
+		// ROB
+		.fROB_full_IN(0),
+		.tROB_pushReq_OUT(tROB_pushReq),
+		.tROB_pushData_OUT(),
+		
+		// Rename RAT overwrite
+		.tRenRatOverwrite_IN(0),
+		.tRenRatOverwriteData_IN(),
+		
+		// Freelist push interfaces
+		.tFreeL_pushReq_IN (0),
+		.tFreeL_pushData_IN (0),
+		.fFreeL_full_OUT()
+		);
+	
+	wire wtIQ_pushReq_OUT;
+	wire [RENISSUE_WIDTH-1:0] wtIQ_pushData_OUT;
+	wire wfIQ_full;
+	wire wtLSQ_pushReq_OUT;
+	wire [RENISSUE_WIDTH-1:0] wtLSQ_pushData_OUT;
+	wire wfLSQ_full;
+
 	
 	
-	
+	always @(posedge CLK) begin
+		$display("+++++++++ MIPS - RENAME (OUT)ERFACE");
+		$display ("IQPUSH:%x I:%x IsRegWr:%x aRegID:%d IsMemR:%x IsMemWr:%x PhReg:%d", 
+					wtIQ_pushReq_OUT, 
+					wtIQ_pushData_OUT[31:0],
+					wtIQ_pushData_OUT[33:32],
+					wtIQ_pushData_OUT[38:34],
+					wtIQ_pushData_OUT[39],
+					wtIQ_pushData_OUT[40],		
+					wtIQ_pushData_OUT[46:41]);
+
+		$display ("LSQPUSH:%x I:%x IsRegWr:%x aRegID:%d IsMemR:%x IsMemWr:%x PhReg:%d", 
+					wtLSQ_pushReq_OUT, 
+					wtLSQ_pushData_OUT[31:0],
+					wtLSQ_pushData_OUT[33:32],
+					wtLSQ_pushData_OUT[38:34],
+					wtLSQ_pushData_OUT[39],
+					wtLSQ_pushData_OUT[40],		
+					wtLSQ_pushData_OUT[46:41]);
+
+					
+		$display ("ROBpush: %x", tROB_pushReq);
+		// $display ("", );
+	end
 	
 	////////////////////////////////////////////////////////////////////////////
 	// Q_REN-ISS (Reg Rename - Issue)///////////////////////////////////////////
@@ -377,7 +474,7 @@ module MIPS (	R2_output,
         FREEZE,
         ALUSrc1_EXEM,
         ALUSrc1_IDEXE,
-        Instr1_IDEXE,
+        Instr1_IDREN,
         Instr1_EXEM,
         Dest_Value1_IDEXE,
         Dest_Value1_EXEM,
@@ -396,7 +493,7 @@ module MIPS (	R2_output,
         do_writeback1_IDEXE,
         /**/readRegisterA1_IDEXE,
         readRegisterB1_IDEXE,
-        /**/writeRegister1_IDEXE,
+        /**/wWrRegID_IDREN,
         writeRegister1_EXEM,
         Instr1_10_6_IDEXE,
         MemRead1_IDEXE,
@@ -474,7 +571,8 @@ module MIPS (	R2_output,
 	////////////////////////////////////////////////////////////////////////////
 	// RETIREMENT - RET.v///////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-	
+	wire fROB_full_IN;
+	wire tROB_pushReq;
 	
 	
 	

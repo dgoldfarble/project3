@@ -42,7 +42,7 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(ALU_control2_IDEXE,5,0);
     VL_SIG8(ALU_control1_EXEM,5,0);
     VL_SIG8(ALU_control2_EXEM,5,0);
-    VL_SIG8(writeRegister1_IDEXE,4,0);
+    VL_SIG8(wWrRegID_IDREN,4,0);
     VL_SIG8(writeRegister2_IDEXE,4,0);
     VL_SIG8(writeRegister1_EXEM,4,0);
     VL_SIG8(writeRegister2_EXEM,4,0);
@@ -91,6 +91,7 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(ALUSrc1_EXEM,0,0);
     VL_SIG8(ALUSrc2_EXEM,0,0);
     VL_SIG8(FREEZE,0,0);
+    VL_SIG8(isRegWrInstr_IDREN,1,0);
     VL_SIG8(MVECT,1,0);
     VL_SIG8(__PVT__DataWriteMode,1,0);
     VL_SIG8(__PVT__IMISS,0,0);
@@ -99,7 +100,12 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__PVT__wQ_IFID_popReq,0,0);
     VL_SIG8(__PVT__wFreezeID,0,0);
     VL_SIG8(__PVT__wQ_IDREN_pushReq,0,0);
-    VL_SIG8(__PVT__wQ_IDREN_popReq,0,0);
+    VL_SIG8(__PVT__wtIQ_pushReq_OUT,0,0);
+    VL_SIG8(__PVT__wfIQ_full,0,0);
+    VL_SIG8(__PVT__wtLSQ_pushReq_OUT,0,0);
+    VL_SIG8(__PVT__wfLSQ_full,0,0);
+    VL_SIG8(__PVT__fROB_full_IN,0,0);
+    VL_SIG8(__PVT__tROB_pushReq,0,0);
     VL_SIG8(__PVT__iCache1__DOT__hit1,0,0);
     VL_SIG8(__PVT__iCache1__DOT__hit2,0,0);
     VL_SIG8(__PVT__iCache1__DOT__waitCount,3,0);
@@ -112,7 +118,6 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__PVT__Q_IFID__DOT__count,3,0);
     VL_SIG8(__PVT__Q_IFID__DOT__validPush,0,0);
     VL_SIG8(__PVT__Q_IFID__DOT__validPop,0,0);
-    VL_SIG8(__PVT__Q_IFID__DOT__shortIdx,2,0);
     VL_SIG8(__PVT__ID1__DOT__ALU_control1,5,0);
     VL_SIG8(__PVT__ID1__DOT__opcode1,5,0);
     VL_SIG8(__PVT__ID1__DOT__funct1,5,0);
@@ -139,11 +144,29 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__PVT__Q_IDREN__DOT__count,3,0);
     VL_SIG8(__PVT__Q_IDREN__DOT__validPush,0,0);
     VL_SIG8(__PVT__Q_IDREN__DOT__validPop,0,0);
-    VL_SIG8(__PVT__Q_IDREN__DOT__shortIdx,2,0);
+    VL_SIG8(__PVT__rename__DOT__wCarryOn,0,0);
+    VL_SIG8(__PVT__rename__DOT__wIsRegWrite,1,0);
+    VL_SIG8(__PVT__rename__DOT__wIsMemRead,0,0);
+    VL_SIG8(__PVT__rename__DOT__wIsMemWrite,0,0);
+    VL_SIG8(__PVT__rename__DOT__curPhysReg,5,0);
+    VL_SIG8(__PVT__rename__DOT__wQ_FreeL_pushReq,0,0);
+    VL_SIG8(__PVT__rename__DOT__wQ_FreeL_popReq,0,0);
+    VL_SIG8(__PVT__rename__DOT__wQ_FreeL_pushData,5,0);
+    VL_SIG8(__PVT__rename__DOT__wQ_FreeL_popData,5,0);
+    VL_SIG8(__PVT__rename__DOT__rFreeLUnderflow,0,0);
+    VL_SIG8(__PVT__rename__DOT__rIQoverflow,0,0);
+    VL_SIG8(__PVT__rename__DOT__rLSQoverflow,0,0);
+    VL_SIG8(__PVT__rename__DOT__wIQpushable,0,0);
+    VL_SIG8(__PVT__rename__DOT__wLSQpushable,0,0);
+    VL_SIG8(__PVT__rename__DOT__freelist__DOT__head,5,0);
+    VL_SIG8(__PVT__rename__DOT__freelist__DOT__tail,5,0);
+    VL_SIG8(__PVT__rename__DOT__freelist__DOT__count,6,0);
+    VL_SIG8(__PVT__rename__DOT__freelist__DOT__validPush,0,0);
+    VL_SIG8(__PVT__rename__DOT__freelist__DOT__validPop,0,0);
     VL_SIG8(__PVT__EXE1__DOT__ALU1__DOT__i,4,0);
     VL_SIG8(__PVT__MEM1__DOT__ALU_control,5,0);
     VL_SIG8(__PVT__MEM1__DOT__select1_WB,0,0);
-    //char	__VpadToAlign271[1];
+    //char	__VpadToAlign294[2];
     VL_SIG(R2_output_ID,31,0);
     VL_SIG(Instr_fMEM,31,0);
     VL_SIG(Instr_address_2IM,31,0);
@@ -160,7 +183,7 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG(Dest_Value2_IDEXE,31,0);
     VL_SIG(Dest_Value1_EXEM,31,0);
     VL_SIG(Dest_Value2_EXEM,31,0);
-    VL_SIG(Instr1_IDEXE,31,0);
+    VL_SIG(Instr1_IDREN,31,0);
     VL_SIG(Instr2_IDEXE,31,0);
     VL_SIG(Instr1_EXEM,31,0);
     VL_SIG(Instr2_EXEM,31,0);
@@ -187,11 +210,9 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG(Instr1_fIC,31,0);
     VL_SIG(Instr2_fIC,31,0);
     VL_SIG(__PVT__data_read_fDC,31,0);
-    //char	__VpadToAlign444[4];
-    VL_SIGW(__PVT__wQ_IFID_pushData,95,0,3);
-    //char	__VpadToAlign460[4];
+    //char	__VpadToAlign468[4];
     VL_SIGW(__PVT__wQ_IFID_popData,95,0,3);
-    VL_SIG(__PVT__wQ_IDREN_popData,31,0);
+    //char	__VpadToAlign484[4];
     VL_SIGW(__PVT__iCache1__DOT__cc0__DOT__valid,1023,0,32);
     VL_SIGW(__PVT__iCache1__DOT__cc0__DOT__dirty,1023,0,32);
     VL_SIGW(__PVT__iCache1__DOT__cc0__DOT__block_out1,255,0,8);
@@ -199,7 +220,7 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIGW(__PVT__dCache1__DOT__block_out0,255,0,8);
     VL_SIGW(__PVT__dCache1__DOT__block_out1,255,0,8);
     VL_SIGW(__PVT__dCache1__DOT__policy,256,0,9);
-    //char	__VpadToAlign900[4];
+    //char	__VpadToAlign908[4];
     VL_SIGW(__PVT__dCache1__DOT__cc0__DOT__valid,511,0,16);
     VL_SIGW(__PVT__dCache1__DOT__cc0__DOT__dirty,511,0,16);
     VL_SIGW(__PVT__dCache1__DOT__cc1__DOT__valid,511,0,16);
@@ -223,7 +244,11 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG(__PVT__EXE1__DOT__LO,31,0);
     VL_SIG(__PVT__MEM1__DOT__data_read_aligned,31,0);
     VL_SIG(__PVT__MEM1__DOT__aluResult,31,0);
-    //char	__VpadToAlign1236[4];
+    //char	__VpadToAlign1244[4];
+    VL_SIG64(__PVT__wQ_IDREN_popData,40,0);
+    VL_SIG64(__PVT__wtIQ_pushData_OUT,46,0);
+    VL_SIG64(__PVT__wtLSQ_pushData_OUT,46,0);
+    VL_SIG64(__PVT__rename__DOT__wPushDataIQLSQ,46,0);
     VL_SIG64(__PVT__EXE1__DOT__ALU1__DOT__temp,63,0);
     VL_SIG(Reg_ID[32],31,0);
     VL_SIG(__PVT__iCache1__DOT__cc0__DOT__tags[1024],16,0);
@@ -233,7 +258,8 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG(__PVT__dCache1__DOT__cc1__DOT__tags[512],17,0);
     VL_SIGW(__PVT__dCache1__DOT__cc1__DOT__blocks[512],255,0,8);
     VL_SIGW(__PVT__Q_IFID__DOT__buffer[8],95,0,3);
-    VL_SIG(__PVT__Q_IDREN__DOT__buffer[8],31,0);
+    VL_SIG64(__PVT__Q_IDREN__DOT__buffer[8],40,0);
+    VL_SIG8(__PVT__rename__DOT__freelist__DOT__buffer[64],5,0);
     
     // LOCAL VARIABLES
     VL_SIG8(dCache1__DOT____Vlvbound1,0,0);
@@ -253,17 +279,30 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__Vdlyvset__Q_IDREN__DOT__buffer__v0,0,0);
     VL_SIG8(__Vdlyvdim0__Q_IDREN__DOT__buffer__v1,2,0);
     VL_SIG8(__Vdlyvset__Q_IDREN__DOT__buffer__v1,0,0);
+    VL_SIG8(__Vdly__rename__DOT__rFreeLUnderflow,0,0);
+    VL_SIG8(__Vdly__rename__DOT__rIQoverflow,0,0);
+    VL_SIG8(__Vdly__rename__DOT__rLSQoverflow,0,0);
+    VL_SIG8(__Vdly__rename__DOT__freelist__DOT__count,6,0);
+    VL_SIG8(__Vdly__rename__DOT__freelist__DOT__tail,5,0);
+    VL_SIG8(__Vdly__rename__DOT__freelist__DOT__head,5,0);
+    VL_SIG8(__Vdlyvdim0__rename__DOT__freelist__DOT__buffer__v0,5,0);
+    VL_SIG8(__Vdlyvval__rename__DOT__freelist__DOT__buffer__v0,5,0);
+    VL_SIG8(__Vdlyvset__rename__DOT__freelist__DOT__buffer__v0,0,0);
+    VL_SIG8(__Vdlyvdim0__rename__DOT__freelist__DOT__buffer__v1,5,0);
+    VL_SIG8(__Vdlyvset__rename__DOT__freelist__DOT__buffer__v1,0,0);
     VL_SIG8(__Vdly__ID1__DOT__syscalBubbleCounter,1,0);
     VL_SIG8(__Vdly__writeRegister1_MEMW,4,0);
     VL_SIG8(__Vdly__do_writeback1_MEMW,0,0);
+    //char	__VpadToAlign75403[5];
     VL_SIGW(__Vdlyvval__Q_IFID__DOT__buffer__v0,95,0,3);
-    VL_SIG(__Vdlyvval__Q_IDREN__DOT__buffer__v0,31,0);
     VL_SIG(__Vdly__Instr2_IFID,31,0);
     VL_SIG(__Vdly__IF1__DOT__FPC,31,0);
     VL_SIG(__Vdly__IF1__DOT__PC,31,0);
+    VL_SIG64(__Vdlyvval__Q_IDREN__DOT__buffer__v0,40,0);
     
     // INTERNAL VARIABLES
   private:
+    //char	__VpadToAlign75444[4];
     VMIPS__Syms*	__VlSymsp;		// Symbol table
   public:
     
@@ -283,29 +322,30 @@ VL_MODULE(VMIPS_MIPS) {
     
     // INTERNAL METHODS
     void __Vconfigure(VMIPS__Syms* symsp, bool first);
-    static void	_combo__TOP__v__14(VMIPS__Syms* __restrict vlSymsp);
-    static void	_combo__TOP__v__17(VMIPS__Syms* __restrict vlSymsp);
+    static void	_combo__TOP__v__12(VMIPS__Syms* __restrict vlSymsp);
+    static void	_combo__TOP__v__16(VMIPS__Syms* __restrict vlSymsp);
     static void	_combo__TOP__v__19(VMIPS__Syms* __restrict vlSymsp);
     static void	_combo__TOP__v__21(VMIPS__Syms* __restrict vlSymsp);
+    static void	_combo__TOP__v__23(VMIPS__Syms* __restrict vlSymsp);
+    static void	_combo__TOP__v__6(VMIPS__Syms* __restrict vlSymsp);
     static void	_initial__TOP__v(VMIPS__Syms* __restrict vlSymsp);
-    static void	_multiclk__TOP__v__13(VMIPS__Syms* __restrict vlSymsp);
-    static void	_multiclk__TOP__v__16(VMIPS__Syms* __restrict vlSymsp);
+    static void	_multiclk__TOP__v__15(VMIPS__Syms* __restrict vlSymsp);
+    static void	_multiclk__TOP__v__18(VMIPS__Syms* __restrict vlSymsp);
     static void	_sequent__TOP__v__10(VMIPS__Syms* __restrict vlSymsp);
     static void	_sequent__TOP__v__11(VMIPS__Syms* __restrict vlSymsp);
+    static void	_sequent__TOP__v__13(VMIPS__Syms* __restrict vlSymsp);
     static void	_sequent__TOP__v__2(VMIPS__Syms* __restrict vlSymsp);
     static void	_sequent__TOP__v__3(VMIPS__Syms* __restrict vlSymsp);
     static void	_sequent__TOP__v__4(VMIPS__Syms* __restrict vlSymsp);
-    static void	_sequent__TOP__v__6(VMIPS__Syms* __restrict vlSymsp);
     static void	_sequent__TOP__v__7(VMIPS__Syms* __restrict vlSymsp);
-    static void	_sequent__TOP__v__9(VMIPS__Syms* __restrict vlSymsp);
+    static void	_sequent__TOP__v__8(VMIPS__Syms* __restrict vlSymsp);
     static void	_settle__TOP__v__1(VMIPS__Syms* __restrict vlSymsp);
-    static void	_settle__TOP__v__12(VMIPS__Syms* __restrict vlSymsp);
-    static void	_settle__TOP__v__15(VMIPS__Syms* __restrict vlSymsp);
-    static void	_settle__TOP__v__18(VMIPS__Syms* __restrict vlSymsp);
+    static void	_settle__TOP__v__14(VMIPS__Syms* __restrict vlSymsp);
+    static void	_settle__TOP__v__17(VMIPS__Syms* __restrict vlSymsp);
     static void	_settle__TOP__v__20(VMIPS__Syms* __restrict vlSymsp);
     static void	_settle__TOP__v__22(VMIPS__Syms* __restrict vlSymsp);
     static void	_settle__TOP__v__5(VMIPS__Syms* __restrict vlSymsp);
-    static void	_settle__TOP__v__8(VMIPS__Syms* __restrict vlSymsp);
+    static void	_settle__TOP__v__9(VMIPS__Syms* __restrict vlSymsp);
 } VL_ATTR_ALIGNED(64);
 
 #endif  /*guard*/
