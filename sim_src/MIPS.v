@@ -151,7 +151,7 @@ module MIPS (	R2_output,
    wire [ 31: 0]  Instr2_fIC/*verilator public*/;
    // wire           single_fetch_iCache;
 
-   wire [  1: 0]  MVECT/*verilator public*/;
+   wire [  1: 0]  MVECT/*verilator public*/; 	// what the hell is this
    wire [  1: 0]  DataWriteMode;
    wire [ 31: 0]  data_read_fDC;
    wire           IMISS;
