@@ -85,7 +85,7 @@ module IF(	CLK,
 		tQ_IFID_pushReq <= wCarryOn && RESET;
 	end
 
-  initial comment = 1; // shows IF displays
+  initial comment = 0; // shows IF displays
   always  /*@ (posedge CLK)*/ begin
      if (comment) begin
 	$display("==IF=========================================================");

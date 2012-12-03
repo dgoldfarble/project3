@@ -24,6 +24,7 @@ module queue (	clk,
 				data_OUT,		// Popped data. Check popValid_OUT also
 				emptyFlag_OUT,	// high when buffer is empty
 				fullFlag_OUT,	// High when buffer is full
+				initData_IN,
 				flush_IN);
 	
 
@@ -31,6 +32,7 @@ module queue (	clk,
 	parameter	DATA_WIDTH 	= 0; 	// in bits
 	parameter	ADDR_WIDTH 	= 0;	// in bits
 	parameter 	SHOW_DEBUG 	= 1; 	// True/False. Show debugging comments or not
+	parameter	INIT_CODE	= 0;	// 0: init with 0. 1: init with 0 to MAX_BUF
 	parameter	QUEUE_NAME	= "Q";	// Name of queue. Useful in debugging
 
 
@@ -40,14 +42,12 @@ input	reset;
 input	pushReq_IN;
 input	popReq_IN;
 input [DATA_WIDTH-1:0]	data_IN;
+input [DATA_WIDTH-1:0]	initData_IN;
 input 	flush_IN;
 
 output [DATA_WIDTH-1:0]	data_OUT;
 output 	emptyFlag_OUT;
 output 	fullFlag_OUT;
-
-//`define JUNK	(0<<DATA_WIDTH | 3134914741) 	// BADB00B5
-`define JUNK	(2989) // "BAD" instead of BADB00B5 coz of compilation problems
 
 `define MAX_BUF (1<<ADDR_WIDTH)	// Max no of elements in buf
 
@@ -66,6 +66,21 @@ assign 	fullFlag_OUT	= (count == `MAX_BUF);
 assign 	rData2Buf 		= data_IN;
 assign	validPush		= (!fullFlag_OUT && pushReq_IN);
 assign	validPop		= (!emptyFlag_OUT && popReq_IN);
+
+integer genctr;
+reg [DATA_WIDTH-1:0] genval;
+initial begin
+	genval = 0;
+	for (genctr = 0; genctr < `MAX_BUF; genctr = genctr + 1) begin
+		buffer[genctr] = (INIT_CODE==1)?genval:((INIT_CODE==0)?0:0);
+		genval = genval + 1;
+	end
+	
+	if (INIT_CODE == 1) begin
+		count = `MAX_BUF;
+	end
+end
+
 
 // Update buffer counter
 always @(posedge clk) begin
@@ -116,6 +131,7 @@ always /*@(posedge clk) */begin
 	if (SHOW_DEBUG)
 	begin
 		$display("----------------Q: %s------------------",QUEUE_NAME);
+		// $display("INITCODE:%x",INIT_CODE);
 		if (flush_IN) $display("\n----------------FLUSH!!!!!!-----------------\n");
 		$display("Count: %d %s%s"/* %s"*/, count, (emptyFlag_OUT)?"EMPTY!":" ", (fullFlag_OUT)?"FULL!":" ");//, (doBypassBuf)?"<---BYPASS!":" ");
 		$display("Push: %s(%x) Pop: %s(%x) %s", (pushReq_IN)?"Y":"N", data_IN, (popReq_IN)?"Y":"N", data_OUT, (validPush&&validPop)?"<---PUSHPOP":"       ");
@@ -138,13 +154,6 @@ always /*@(posedge clk) */begin
 		end
 	
 	end // if (SHOW_DEBUG)
-end
-
-initial begin
-	for (idx = 0; idx < `MAX_BUF; idx = idx + 1)
-	begin
-		buffer[idx] = `JUNK;
-	end
 end
 
 endmodule
