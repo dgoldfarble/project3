@@ -34,7 +34,7 @@ module MEM (	CLK,
 
    output reg    [31: 0] aluResult1_PR;
    output reg    [31: 0] data_read1_PR;
-   output reg    [31: 0] data_write_2DM;
+   output reg    [31: 0] data_write_2DM; 
    output reg    [31: 0] data_address_2DM;
    output reg    [31: 0] Instr_OUT;
    output reg    [31: 0] Data1_2ID;

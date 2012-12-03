@@ -9,16 +9,16 @@ module ID ( 	CLK,
 		single_fetch_OUT,
 		Instr1_PR,
 		Dest_Value1_PR,
-                insertBubble_OUT,
-                SYS_OUT,
+		insertBubble_OUT,
+		SYS_OUT,
 		readDataB1_PR,
 		Instr1_10_6_PR,
-                do_writeback1_MEM,
-                writeRegister1_MEM,
-                Data1_MEM,
-                do_writeback1_WB,
-                writeRegister1_WB,
-                Data1_WB,
+		do_writeback1_MEM,
+		writeRegister1_MEM,
+		Data1_MEM,
+		do_writeback1_WB,
+		writeRegister1_WB,
+		Data1_WB,
 		aluResult1,
 		do_writeback1_PR,
 		readRegisterA1_PR,
@@ -39,7 +39,8 @@ module ID ( 	CLK,
 		PCA,
 		writeData1_WB,
 		R2_input,
-		CIA
+		CIA,
+		control_signals // DAVID
 		);
    	
 	output reg      [31: 0] R2_output_PR;
@@ -65,6 +66,8 @@ module ID ( 	CLK,
         output reg              insertBubble_OUT;
         output reg              SYS_OUT;
 	output reg              fetchNull2_OUT;
+	// DAVID
+	output reg		[17:0] 	control_signals;
 
 	input           [31: 0] Data1_MEM;
 	input           [31 :0] Data1_WB;
@@ -155,6 +158,11 @@ module ID ( 	CLK,
 	assign readDataB1 = Reg[readRegisterB1];
 	assign Operand_B1 = (ALUSrc1)?signExtended_output1:readDataB1;
 	assign R2_output = Reg[2];
+	
+	// DAVID
+	assign control_signals = {link1,RegDst1,jump1,branch1,MemRead1,MemtoReg1,MemWrite1,ALUSrc1,RegWrite1,jumpRegister_Flag1,sign_or_zero_Flag1,syscal1,ALU_control1};
+	
+	
 
 	always begin 
 		//Forwarded Operand A

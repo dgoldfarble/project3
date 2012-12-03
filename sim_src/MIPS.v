@@ -190,8 +190,9 @@ module MIPS (	R2_output,
         CIA_IFID,
         no_fetch,
         // /*single_fetch_IDIF*/single_fetch_iCache,
-        .taken_branch1(0),//.taken_branch1(taken_branch1_IDIF),
-        .nextInstruction_address(0),//.nextInstruction_address(nextInstruction_address_IDIF),
+        // taken branch flag comes from commit stage
+        .taken_branch1(branch_misprediction),//.taken_branch1(taken_branch1_IDIF),
+        .nextInstruction_address(branch_address_COMMIT),//.nextInstruction_address(nextInstruction_address_IDIF),
         PC_init,
         /*Instr1_fIM*/Instr1_fIC,
         Instr1_IFID,
@@ -200,6 +201,7 @@ module MIPS (	R2_output,
 		.tQ_IFID_pushReq(wQ_IFID_pushReq),
 		.tQ_IFID_full(wQ_IFID_full)
     );
+   
 
 	////////////////////////////////////////////////////////////////////////////
 	// Q_IFID///////////////////////////////////////////////////////////////////
@@ -298,7 +300,9 @@ module MIPS (	R2_output,
 		.tQ_IFID_popReq_OUT (wQ_IFID_popReq),
 		.fQ_IFID_empty_IN	(wQ_IFID_empty),
 		.tQ_IDREN_pushReq_OUT(wQ_IDREN_pushReq),
-		.fQ_IDREN_full_IN	(wQ_IDREN_full)
+		.fQ_IDREN_full_IN	(wQ_IDREN_full),
+		.control_signals() 	// DAVID
+							// actually we'll need to duplicate this signal for super-scalar
     );
 
 	
@@ -341,11 +345,34 @@ module MIPS (	R2_output,
 	////////////////////////////////////////////////////////////////////////////
 	// REG RENAME - REN.v///////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
+	REN RENAME	(	// inputs
+					.Instr1_IN(),
+					.Instr2_IN(0),
+					.Instr1_Addr_IN(),
+					.Issue_Queue_full_IN(), // input for this stage
+					.Issue_Queue_second_spot_IN(), // when we want to issue two instructions in a cycle
+												// also for the love of god... please rename this signal I suck
+												// could combine the signals into one two-bit signal?
+					.ROB_tail_pointer_IN(),
+					.ROB_Queue_full_IN(),
+					.FreeList_push_IN(),
+					.FreeList_register_IN(),
+					.Copy_Retirement_RAT_IN(),
+					.Copy_Retirement_RAT_FLAG_IN(),
+					// outputs
+					.Issue_Queue_pop1(),
+					.Issue_Queue_Instr1(),
+					.Issue_Queue_pop2(),
+					.Issue_Queue_Instr2(),
+					.Allocate_ROB_Instr1(),
+					.Allocate_ROB_Instr2()
+				);
 	
 	
 	
 	
 	
+	// Don't need this (I don't think)
 	////////////////////////////////////////////////////////////////////////////
 	// Q_REN-ISS (Reg Rename - Issue)///////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
@@ -359,56 +386,72 @@ module MIPS (	R2_output,
 	
 	
 	
-	
 	////////////////////////////////////////////////////////////////////////////
-	// RF_READ - RF_READ.v//////////////////////////////////////////////////////
+	// RF_Read/Write - RF_RW.v//////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
+	RF_RW RF_ReadWrite	(	// inputs
+							.ReadAddress_A1(),
+							.ReadAddress_B1(),
+							.ReadAddress_A2(),
+							.ReadAddress_B2(),
+							.ReadAddress_A3(),
+							.ReadAddress_B4(),
+							.WriteAddress_1(),
+							.WriteAddress_2(),
+							.WriteAddress_3(),
+							.WriteData_1(),
+							.WriteData_2(),
+							.WriteData_3(),
+							// outputs
+							.ReadData_A1(),
+							.ReadData_B1(),
+							.ReadData_A2(),
+							.ReadData_B2(),
+							.ReadData_A3(),
+							.ReadData_B3(),
+						);
 	
 	
 	////////////////////////////////////////////////////////////////////////////
 	// EXE - EXE.v?/////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-   EXE EXE1( CLK,
-        RESET,
-        FREEZE,
-        ALUSrc1_EXEM,
-        ALUSrc1_IDEXE,
-        Instr1_IDEXE,
-        Instr1_EXEM,
-        Dest_Value1_IDEXE,
-        Dest_Value1_EXEM,
-        readDataB1_IDEXE,
-        readDataB1_EXEM,
-        aluResult1_EXEID,
-        do_writeback1_WBEXE,
-        writeRegister1_WBEXE,
-        writeData1_WBEXE,
-        ALU_control1_EXEM,
-        ALU_control1_IDEXE,
-        writeData1_WBID,
-        writeRegister1_MEMW,
-        do_writeback1_MEMW,
-        do_writeback1_EXEM,
-        do_writeback1_IDEXE,
-        /**/readRegisterA1_IDEXE,
-        readRegisterB1_IDEXE,
-        /**/writeRegister1_IDEXE,
-        writeRegister1_EXEM,
-        Instr1_10_6_IDEXE,
-        MemRead1_IDEXE,
-        MemWrite1_IDEXE,
-        MemRead1_EXEM,
-        MemWrite1_EXEM,
-        Operand_A1_IDEXE,
-        Operand_B1_IDEXE,
-        MemtoReg1_IDEXE,
-        MemtoReg1_EXEM,
-        aluResult1_EXEM
-    );
+   EXE EXE1	( 	CLK,
+				RESET,
+				FREEZE,
+				ALUSrc1_EXEM,
+				ALUSrc1_IDEXE,
+				Instr1_IDEXE,
+				Instr1_EXEM,
+				Dest_Value1_IDEXE,
+				Dest_Value1_EXEM,
+				readDataB1_IDEXE,
+				readDataB1_EXEM,
+				aluResult1_EXEID,
+				do_writeback1_WBEXE,
+				writeRegister1_WBEXE,
+				writeData1_WBEXE,
+				ALU_control1_EXEM,
+				ALU_control1_IDEXE,
+				writeData1_WBID,
+				writeRegister1_MEMW,
+				do_writeback1_MEMW,
+				do_writeback1_EXEM,
+				do_writeback1_IDEXE,
+				/**/readRegisterA1_IDEXE,
+				readRegisterB1_IDEXE,
+				/**/writeRegister1_IDEXE,
+				writeRegister1_EXEM,
+				Instr1_10_6_IDEXE,
+				MemRead1_IDEXE,
+				MemWrite1_IDEXE,
+				MemRead1_EXEM,
+				MemWrite1_EXEM,
+				Operand_A1_IDEXE,
+				Operand_B1_IDEXE,
+				MemtoReg1_IDEXE,
+				MemtoReg1_EXEM,
+				aluResult1_EXEM
+			);
 
 	
 	
