@@ -53,18 +53,18 @@ module ID ( 	CLK,
 	output reg      [31: 0] Instr1_PR;
 	output reg      [ 5: 0] ALU_control1_PR;
 	output reg      [ 4: 0] writeRegister1_PR;
-     	output reg      [ 4: 0] readRegisterA1_PR;
-     	output reg      [ 4: 0] readRegisterB1_PR;
-        output reg      [ 4: 0] Instr1_10_6_PR;
-        output reg              ALUSrc1_PR;
+ 	output reg      [ 4: 0] readRegisterA1_PR;
+ 	output reg      [ 4: 0] readRegisterB1_PR;
+    output reg      [ 4: 0] Instr1_10_6_PR;
+    output reg              ALUSrc1_PR;
 	output reg 	        single_fetch_OUT;
 	output reg 	        taken_branch1_PR;
 	output reg              MemRead1_PR;
 	output reg              MemtoReg1_PR;
 	output reg              MemWrite1_PR;
 	output reg	        do_writeback1_PR;
-        output reg              insertBubble_OUT;
-        output reg              SYS_OUT;
+    output reg              insertBubble_OUT;
+    output reg              SYS_OUT;
 	output reg              fetchNull2_OUT;
 	// DAVID
 	output reg		[17:0] 	control_signals;
