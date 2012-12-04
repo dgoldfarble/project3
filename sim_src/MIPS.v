@@ -369,28 +369,6 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	////////////////////////////////////////////////////////////////////////////
 	// REG RENAME - REN.v///////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-	REN RENAME	(	// inputs
-					.Instr1_IN(),
-					.Instr2_IN(0),
-					.Instr1_Addr_IN(),
-					.Issue_Queue_full_IN(), // input for this stage
-					.Issue_Queue_second_spot_IN(), // when we want to issue two instructions in a cycle
-												// also for the love of god... please rename this signal I suck
-												// could combine the signals into one two-bit signal?
-					.ROB_tail_pointer_IN(),
-					.ROB_Queue_full_IN(),
-					.FreeList_push_IN(),
-					.FreeList_register_IN(),
-					.Copy_Retirement_RAT_IN(),
-					.Copy_Retirement_RAT_FLAG_IN(),
-					// outputs
-					.Issue_Queue_pop1(),
-					.Issue_Queue_Instr1(),
-					.Issue_Queue_pop2(),
-					.Issue_Queue_Instr2(),
-					.Allocate_ROB_Instr1(),
-					.Allocate_ROB_Instr2()
-				);
 	
 	parameter PHYSREGS_DEPTH = 6;				// 64 phys regs
 	parameter ARCHREGS_DEPTH = 5;				// 32 architectural regs
@@ -403,6 +381,13 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	
 	wire wFreezeREN;
 	assign wFreezeREN = wQ_IDREN_empty || fROB_full_IN;
+	
+	wire wtIQ_pushReq_OUT;
+	wire [RENISSUE_WIDTH-1:0] wtIQ_pushData_OUT;
+	wire wfIQ_full;
+	wire wtLSQ_pushReq_OUT;
+	wire [RENISSUE_WIDTH-1:0] wtLSQ_pushData_OUT;
+	wire wfLSQ_full;
 	
 	REN #(	.IDREN_POP_WIDTH(Q_IDREN_DATAWIDTH),
 			.PHYSREGS_DEPTH(PHYSREGS_DEPTH),
@@ -440,13 +425,6 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		.tFreeL_pushData_IN (0),
 		.fFreeL_full_OUT()
 		);
-	
-	wire wtIQ_pushReq_OUT;
-	wire [RENISSUE_WIDTH-1:0] wtIQ_pushData_OUT;
-	wire wfIQ_full;
-	wire wtLSQ_pushReq_OUT;
-	wire [RENISSUE_WIDTH-1:0] wtLSQ_pushData_OUT;
-	wire wfLSQ_full;
 
 	
 	
@@ -474,12 +452,6 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		$display ("ROBpush: %x", tROB_pushReq);
 		// $display ("", );
 	end
-	
-	// Don't need this (I don't think)
-	////////////////////////////////////////////////////////////////////////////
-	// Q_REN-ISS (Reg Rename - Issue)///////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////////////
-	
 	
 	
 	
