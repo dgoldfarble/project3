@@ -35,6 +35,7 @@ module EXE(		// instruction 1 input
 				Instr2_PR,
 				writeRegister2_PR,
 				do_writeback2_PR,
+				taken_branch1,
 				// load/store instruction input
 				LS_Op1,		// should be a register value
 				LS_register1,
@@ -57,15 +58,15 @@ module EXE(		// instruction 1 input
 				MemWrite1_PR,
 				MemtoReg1_PR,	// 1 for a load 0 for a store
 				// forward data
-				fwd_data_1,
-				fwd_reg_1,
-				fwd_data_1_WB,
-				fwd_data_2,
-				fwd_reg_2,
-				fwd_data_2_WB,
-				LS_fwd_data,
-				LS_fwd_reg,
-				LS_fwd_data_WB,
+				fwd_data_1_COM,
+				fwd_reg_1_COM,
+				fwd_data_1_COM_flag,
+				fwd_data_2_COM,
+				fwd_reg_2_COM,
+				fwd_data_2_COM_flag,
+				LS_fwd_data_COM,
+				LS_fwd_reg_COM,
+				LS_fwd_data_COM_flag,
 				// other
 				FREEZE,
 				CLK,
@@ -92,13 +93,13 @@ module EXE(		// instruction 1 input
    output reg     [ 4: 0] writeRegister1_PR;
    output reg        	  do_writeback1_PR;
    
-	// instruction 2 input
+	// instruction 2 input // now for branches
    input          [31: 0] Intstr2;
    input          [31: 0] Operand_A2;
    input          [ 5: 0] readRegisterA2;
    input          [31: 0] Operand_B2;
    input          [ 5: 0] readRegisterB2;
-   input          [ 5: 0] writeRegister2;
+//   input          [ 5: 0] writeRegister2;
    input          [ 5: 0] ROB_tail_pointer2;
    input          [ 5: 0] ALU_control2;
    input          [ 4: 0] Instr2_10_6;
@@ -109,6 +110,7 @@ module EXE(		// instruction 1 input
    output reg     [31: 0] Instr2_PR;
    output reg     [ 4: 0] writeRegister2_PR;
    output reg        	  do_writeback2_PR;
+   output reg            taken_branch1;
 	
 	// load/store instruction input
    input          [31: 0] LS_Op1;		// should be a register value
@@ -133,15 +135,15 @@ module EXE(		// instruction 1 input
    output reg             MemtoReg1_PR;	// 1 for a load 0 for a store
    
    // forward data
-   input          [31: 0] fwd_data_1;
-   input          [ 5: 0] fwd_reg_1;
-   input                  fwd_data_1_WB;
-   input          [31: 0] fwd_data_2;
-   input          [ 5: 0] fwd_reg_2;
-   input                  fwd_data_2_WB;
-   input          [31: 0] LS_fwd_data;
-   input          [ 5: 0] LS_fwd_reg;
-   input                  LS_fwd_data_WB;
+   input          [31: 0] fwd_data_1_COM;
+   input          [ 5: 0] fwd_reg_1_COM;
+   input                  fwd_data_1_COM_flag;
+   input          [31: 0] fwd_data_2_COM;
+   input          [ 5: 0] fwd_reg_2_COM;
+   input                  fwd_data_2_COM_flag;
+   input          [31: 0] LS_fwd_data_COM;
+   input          [ 5: 0] LS_fwd_reg_COM;
+   input                  LS_fwd_data_COM_flag;
    
    // other
    input                  FREEZE;
@@ -149,7 +151,6 @@ module EXE(		// instruction 1 input
    input                  RESET;
         
    wire           [31: 0] aluResult1;
-   wire           [31: 0] aluResult2;
    wire           [31: 0] address_out;
    wire           [31: 0] OpA1;
    wire           [31: 0] OpB1;
@@ -158,77 +159,111 @@ module EXE(		// instruction 1 input
    wire           [31: 0] OpLS1;
    wire           [31: 0] OpLS2;   
    wire           [31: 0] Dst1;
-   reg            [31: 0] HI1, HI2;
-   reg            [31: 0] LO1, LO2;
+   reg            [31: 0] HI1;
+   reg            [31: 0] LO1;
    reg                    comment;
 
 
    	initial comment = 0;  //show EXE displays
 
-	// Forwarding for Instr 1
+
 	always begin
+	// Forwarding for Instr 1	
 		// Operand A1
-		if(fwd_data_1_WB && (fwd_reg_1 == readRegisterA1)
-			OpA1 = fwd_data_1;
-		else if(fwd_data_2_WB && (fwd_reg_2 == readRegisterA1)
-			OpA1 = fwd_data_2;
-		else if(LS_fwd_data_WB && (LS_fwd_reg == readRegisterA1)
-			OpA1 = LS_fwd_data;
+		if(do_writeback1_PR && (writeRegister1_PR == readRegisterA1)
+			OpA1 = aluResult1_PR;
+		else if(do_writeback2_PR && (writeRegister2_PR == readRegisterA1)
+			OpA1 = aluResult2_PR;
+		else if(MemToReg1_PR && (LS_destination_out == readRegisterA1)
+			// DATA HAZARD, OH SHIIIIIT
+			;
+		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA1)
+			OpA1 = fwd_data_1_COM;
+		else if(fwd_data_2_COM_flag && (fwd_reg_2_COM == readRegisterA1)
+			OpA1 = fwd_data_1_COM;
+		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1)
+			OpA1 = LS_fwd_data_COM;
 		else OpA1 = Operand_A1;
-		// Operand B
-		if(fwd_data_1_WB && (fwd_reg_1 == readRegisterB1)
-			OpB1 = fwd_data_1;
-		else if(fwd_data_2_WB && (fwd_reg_2 == readRegisterB1)
-			OpB1 = fwd_data_2;
-		else if(LS_fwd_data_WB && (LS_fwd_reg == readRegisterB1)
-			OpB1 = LS_fwd_data;
+		
+		
+		// Operand B1
+		if(!ALUSrc1) begin
+			if(do_writeback1_PR && (writeRegister1_PR == readRegisterB1)
+				OpB1 = aluResult1_PR;
+			else if(do_writeback2_PR && (writeRegister2_PR == readRegisterB1)
+				OpB1 = aluResult2_PR;
+			else if(MemToReg1_PR && (LS_destination_out == readRegisterB1)
+				// DATA HAZARD, OH SHIIIIIT
+				;
+			else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterB1)
+				OpB1 = fwd_data_1_COM;
+			else if(fwd_data_2_COM_flag && (fwd_reg_2_COM == readRegisterB1)
+				OpB1 = fwd_data_1_COM;
+			else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterB1)
+				OpB1 = LS_fwd_data_COM;
+			else OpB1 = Operand_B1;
+		end
+		
+		
+		// Forwarding for (branch instructions...)
+		// Operand A2
+		if(do_writeback1_PR && (writeRegister1_PR == readRegisterA2)
+			OpA2 = aluResult1_PR;
+		else if(do_writeback2_PR && (writeRegister2_PR == readRegisterA2)
+			OpA2 = aluResult2_PR;
+		else if(MemToReg1_PR && (LS_destination_out == readRegisterA2)
+			// DATA HAZARD, OH SHIIIIIT
+			;
+		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA2)
+			OpA2 = fwd_data_1_COM;
+		else if(fwd_data_2_COM_flag && (fwd_reg_2_COM == readRegisterA2)
+			OpA2 = fwd_data_2_COM;
+		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA2)
+			OpA2 = LS_fwd_data_COM;
+		else OpA2 = Operand_A2;
+		
+		
+		// Operand B2
+		if(!ALUSrc2) begin
+			if(do_writeback1_PR && (writeRegister1_PR == readRegisterB2)
+				OpB2 = aluResult1_PR;
+			else if(do_writeback2_PR && (writeRegister2_PR == readRegisterB2)
+				OpB2 = aluResult2_PR;
+			else if(MemToReg1_PR && (LS_destination_out == readRegisterB2)
+				// DATA HAZARD, OH SHIIIIIT
+				;
+			else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterB2)
+				OpB2 = fwd_data_1_COM;
+			else if(fwd_data_2_COM_flag && (fwd_reg_2_COM == readRegisterB2)
+				OpB2 = fwd_data_2_COM;
+			else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterB2)
+				OpB2 = LS_fwd_data_COM;
+			else OpB2 = Operand_B2;
+		end
+		
+		
+		// LSQ register operand
+		if(do_writeback1_PR && (writeRegister1_PR == LS_register1)
+			OpB1 = aluResult1_PR;
+		else if(do_writeback2_PR && (writeRegister2_PR == LS_register1)
+			OpB1 = aluResult2_PR;
+		else if(MemToReg1_PR && (LS_destination_out == LS_register1)
+			// DATA HAZARD, OH SHIIIIIT
+			;
+		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == LS_register1)
+			OpB1 = fwd_data_1_COM;
+		else if(fwd_data_2_COM_flag && (fwd_reg_2_COM == LS_register1)
+			OpB1 = fwd_data_1_COM;
+		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == LS_register1)
+			OpB1 = LS_fwd_data_COM;
 		else OpB1 = Operand_B1;
 	end
-	
-		// Forwarding for Instr 2 (hopefully...)
-	always begin
-		// Operand A1
-		if(fwd_data_1_WB && (fwd_reg_1 == readRegisterA2)
-			OpA2 = fwd_data_1;
-		else if(fwd_data_2_WB && (fwd_reg_2 == readRegisterA2)
-			OpA2 = fwd_data_2;
-		else if(LS_fwd_data_WB && (LS_fwd_reg == readRegisterA2)
-			OpA2 = LS_fwd_data;
-		else OpA2 = Operand_A2;
-		// Operand B
-		if(fwd_data_1_WB && (fwd_reg_1 == readRegisterB2)
-			OpB2 = fwd_data_1;
-		else if(fwd_data_2_WB && (fwd_reg_2 == readRegisterB2)
-			OpB2 = fwd_data_2;
-		else if(LS_fwd_data_WB && (LS_fwd_reg == readRegisterB2)
-			OpB2 = LS_fwd_data;
-		else OpB2 = Operand_B2;
-	end
-	
-		// Forwarding for LS
-	always begin
-		// Operand A
-		if(fwd_data_1_WB && (fwd_reg_1 == LS_register1)
-			OpLS1 = fwd_data_1;
-		else if(fwd_data_2_WB && (fwd_reg_2 == LS_register1)
-			OpLS1 = fwd_data_2;
-		else if(LS_fwd_data_WB && (LS_fwd_reg == LS_register1)
-			OpLS1 = LS_fwd_data;
-		else OpLS1 = LS_Op1;
-		// Destination
-		if(fwd_data_1_WB && (fwd_reg_1 == LS_destination_reg))
-			Dst1 = fwd_data_1;
-		else if(fwd_data_2_WB && (fwd_reg_2 == LS_destination_reg))
-			Dst1 = fwd_data_2;
-		else if(LS_fwd_data_WB && (LS_fwd_reg == LS_destination_reg))
-			Dst1 = LS_fwd_data;
-		else Dst1 = Dest_Value1;
-	end
+
 
 
 	ALU ALU1(HI1, LO1, aluResult1, OpA1, OpB1, ALU_control1, Instr1_10_6, CLK);
-	ALU ALU1(HI2, LO2, aluResult2, OpA2, OpB2, ALU_control2, Instr2_10_6, CLK);
 	ALU AGU(0, 0, address_out, OpLS1, LS_Op2, LS_ALU_control, 0, CLK);
+	compare compare1(0,OpA2,OpB2,wInstr1,taken_branch1);
 		
 
 	//Pipeline Stage 1
@@ -263,7 +298,6 @@ module EXE(		// instruction 1 input
 			writeRegister1_PR <= writeRegister1;
 			do_writeback1_PR <= do_writeback1_ID;
 	
-			aluResult2_PR <= aluResult2;
 			Instr2_PR <= Instr2;
 			writeRegister2_PR <= writeRegister2;
 			do_writeback2_PR <= do_writeback2_ID;

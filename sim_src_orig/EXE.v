@@ -76,7 +76,8 @@ module EXE(	CLK,
    input                  MemWrite1;
    input		  FREEZE;
    input                  CLK;
-   input        	  RESET;        
+   input        	  RESET;
+        
    wire           [31: 0] aluResult1;
    wire           [31: 0] OpA1;
    wire           [31: 0] OpB1;
@@ -92,7 +93,7 @@ module EXE(	CLK,
 	always begin
 		// Operand A
 		if(do_writeback1_PR && (writeRegister1_PR == readRegisterA1))
-         		OpA1 = aluResult1_PR;
+         	OpA1 = aluResult1_PR;
 		else if(do_writeback1_MEM && (writeRegister1_MEM == readRegisterA1))
 			OpA1 = Data1_MEM;
 		else if(do_writeback1_WB && (writeRegister1_WB == readRegisterA1))

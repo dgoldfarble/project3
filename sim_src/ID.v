@@ -96,7 +96,7 @@ module ID ( 	CLK,
 	input				fQ_IDREN_full_IN;
 	input				fQ_IFID_empty_IN;
 
-        wire            [31: 0] com_OpA1;
+    wire            [31: 0] com_OpA1;
 	wire            [31: 0] com_OpB1;
 	wire            [31: 0] signExtended_output1;
 	wire            [31: 0] Shift_addResult1;

@@ -491,7 +491,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				FREEZE,
 				ALUSrc1_EXEM,
 				ALUSrc1_IDEXE,
-        Instr1_IDREN,
+        		Instr1_IDREN,
 				Instr1_EXEM,
 				Dest_Value1_IDEXE,
 				Dest_Value1_EXEM,
