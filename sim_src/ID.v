@@ -46,7 +46,13 @@ module ID ( 	CLK,
 
 		// to rename
 	 	writeRegister1_PR,
-		isRegWriteInstr_OUT
+		isRegWriteInstr_OUT,
+		isJump_OUT,
+		isJumpReg_OUT,
+		isBranch_OUT,
+		isLink_OUT,
+		PCA_OUT,
+		signExtImm_OUT
 		);
    	
 	output reg      [31: 0] R2_output_PR;
@@ -76,10 +82,16 @@ module ID ( 	CLK,
 	output reg  [4: 0] writeRegister1_PR;
 	output reg [1:0] isRegWriteInstr_OUT;
 	
+	output reg 			isJump_OUT;
+	output reg 			isJumpReg_OUT;
+	output reg 			isBranch_OUT;
+	output reg 			isLink_OUT;
+	output reg [31: 0] 	PCA_OUT, signExtImm_OUT;
+	
 
 	input           [31: 0] Data1_MEM;
 	input           [31 :0] Data1_WB;
-        input           [31: 0] fQ_IFID_Instr1;//_IN;
+	input           [31: 0] fQ_IFID_Instr1;//_IN;
 	input           [31: 0] aluResult1;
 	input           [31: 0] aluResult1_WB;
 	input           [31: 0] fQ_IFID_PCA;//wPCA;
@@ -96,7 +108,7 @@ module ID ( 	CLK,
 	input				fQ_IDREN_full_IN;
 	input				fQ_IFID_empty_IN;
 
-        wire            [31: 0] com_OpA1;
+	wire            [31: 0] com_OpA1;
 	wire            [31: 0] com_OpB1;
 	wire            [31: 0] signExtended_output1;
 	wire            [31: 0] Shift_addResult1;
@@ -114,8 +126,8 @@ module ID ( 	CLK,
 	wire            [ 5: 0] funct1;
 	wire            [ 4: 0] readRegisterA1;
 	wire            [ 4: 0] readRegisterB1;
-     	wire            [ 4: 0] format1;
-     	wire            [ 4: 0] rt1;
+	wire            [ 4: 0] format1;
+	wire            [ 4: 0] rt1;
 	wire            [ 4: 0] writeRegister1;
 	wire                    taken_branch1;
 	wire                    link1;
@@ -165,8 +177,11 @@ module ID ( 	CLK,
 	//////////////////////////////////////////////////////////////////////////
 	
 	assign isRegWriteInstr_OUT = {do_writeback1_PR, RegDst1};
-	
-	
+	assign isJump_OUT = jump1;
+	assign isJumpReg_OUT = jumpRegister_Flag1;
+	assign isBranch_OUT = branch1;
+	assign isLink_OUT = link1;
+	assign PCA_OUT = wPCA;
 	
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
@@ -206,6 +221,8 @@ module ID ( 	CLK,
 	assign Operand_B1 = (ALUSrc1)?signExtended_output1:readDataB1;
 	assign R2_output = Reg[2];
 
+	assign signExtImm_OUT = signExtended_output1;
+	
 	always begin 
 		//Forwarded Operand A
 		if (do_writeback1_PR && (readRegisterA1 == writeRegister1_PR))
