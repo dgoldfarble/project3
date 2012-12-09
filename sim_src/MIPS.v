@@ -304,7 +304,7 @@ module MIPS (	R2_output,
 		.fQ_IFID_empty_IN	(wQ_IFID_empty),
 		.tQ_IDREN_pushReq_OUT(wQ_IDREN_pushReq),
 		.fQ_IDREN_full_IN	(wQ_IDREN_full),
-		.control_signals() 	// DAVID
+		.control_signals(), 	// DAVID
 							// actually we'll need to duplicate this signal for super-scalar
 		
 		// to rename
@@ -325,7 +325,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	// Q_IDREN (ID-RegRename queue)/////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
 
-	parameter Q_IDREN_DATAWIDTH = 32;
+	parameter Q_IDREN_DATAWIDTH = 1+1+5 + 2 + 32;
 	parameter Q_IDREN_ADDRWIDTH = 3;
 	
 	wire wQ_IDREN_empty;
@@ -335,17 +335,12 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire wQ_IDREN_popValid;
 	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_pushData;
 	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_popData;
-	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_pushData;
-	
-	parameter Q_IDREN_DATAWIDTH = 1+1+5 + 2 + 32;
 	assign wQ_IDREN_pushData = {MemWrite1_IDEXE,	//1
 								MemRead1_IDEXE, 	//1
 								wWrRegID_IDREN, 	//5
 								isRegWrInstr_IDREN, //2
 								Instr1_IDREN};		//32
-		
-	assign wQ_IDREN_pushData = {Instr1_IDEXE};
-			
+				
 	queue #(.DATA_WIDTH(Q_IDREN_DATAWIDTH),
 			.ADDR_WIDTH(Q_IDREN_ADDRWIDTH),
 			.SHOW_DEBUG(0),				
@@ -593,6 +588,25 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	////////////////////////////////////////////////////////////////////////////
 	// RETIREMENT - RET.v///////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
+	
+	/* ROB supposed to have:
+ 		Finished bit ---> Should be written when the result is ready on 
+						  one of the forwarding paths or the result has
+						  been written to the physical registers.
+		NumId tag -> for tracking instructions and giving 
+					 access for writing to the finished bit
+		Instr type
+		Arch: dest reg id
+ 		Phys: Dest mem addr or dest reg id
+ 		Dest write value
+ 		Branch Misprediction flag
+		Instruction address -> for recovery from exception/misprediction
+		
+ 		
+	*/
+		
+	
+	
 	wire fROB_full_IN;
 	wire tROB_pushReq;
 	

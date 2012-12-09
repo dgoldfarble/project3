@@ -10,6 +10,13 @@ RULES:
 	Consumer:
 		Check whether queue is empty before popping. Otherwise, popped value MAY be invalid.
 		Gets the value instantaneously.
+		
+	Probe:
+		curTail_OUT 	- Current value of the tail ptr
+		probeIdx_IN		- Index that is to be read/written from/to
+		probeData_OUT	- Data read out from buffer[probeIdx_IN]
+		probePusheq_IN	- Push enable for probeData_IN to be written to buffer[probeIdx_IN]
+		probeData_IN	- Data written to buffer[probeIdx_IN] when probePusheq_IN is high
 	
 Internal:
 PUSH: Buffer is written at the next clock edge.
@@ -25,7 +32,16 @@ module queue (	clk,
 				emptyFlag_OUT,	// high when buffer is empty
 				fullFlag_OUT,	// High when buffer is full
 				initData_IN,
-				flush_IN);
+				flush_IN,
+				
+				// Current tail pointer
+				curTail_OUT,
+				
+				// Probe stuff
+				probeIdx_IN,		// Index you want to read/write to
+				probeData_OUT,		// Data at that index
+				probePushReq_IN,	// Write enable for the probe data
+				probeData_IN);		// Probe data input
 	
 
 // SUPPLY DURING INSTANTIATION:
@@ -37,17 +53,23 @@ module queue (	clk,
 
 
 /////////////////////////////////////////////////////////////////////////////////
-input 	clk;
-input	reset;
-input	pushReq_IN;
-input	popReq_IN;
-input [DATA_WIDTH-1:0]	data_IN;
-input [DATA_WIDTH-1:0]	initData_IN;
-input 	flush_IN;
+input 						clk;
+input						reset;
+input						pushReq_IN;
+input						popReq_IN;
+input 	[DATA_WIDTH-1:0]	data_IN;
+input 	[DATA_WIDTH-1:0]	initData_IN;
+input 						flush_IN;
 
-output [DATA_WIDTH-1:0]	data_OUT;
-output 	emptyFlag_OUT;
-output 	fullFlag_OUT;
+input 	[DATA_WIDTH-1:0]	probeData_IN;
+input	[ADDR_WIDTH-1:0]	probeIdx_IN;
+input						probePushReq_IN;
+
+output 						emptyFlag_OUT;
+output 						fullFlag_OUT;
+output 	[DATA_WIDTH-1:0]	data_OUT;
+output 	[DATA_WIDTH-1:0]	probeData_OUT;
+output	[ADDR_WIDTH-1:0]	curTail_OUT;
 
 `define MAX_BUF (1<<ADDR_WIDTH)	// Max no of elements in buf
 
@@ -97,6 +119,7 @@ always @(posedge clk) begin
 end
 
 // Get some tail or a head
+assign curTail_OUT = tail;
 always @(posedge clk) begin
 	if (!reset || flush_IN) begin
 		tail 		<= 0;
@@ -104,7 +127,7 @@ always @(posedge clk) begin
 	end else begin
 		if (validPush)
 			tail <= tail + 1;
-			
+
 		if (validPop)
 			head <= head + 1;	
 	end
@@ -114,14 +137,20 @@ end
  always @(posedge clk) begin
 	if (!reset)
 		buffer[tail] <= 0;
-	else if (!fullFlag_OUT)
-		buffer[tail] <= rData2Buf;
+	else begin		
+		if (validPush)
+			buffer[tail] <= rData2Buf;
+			
+		if (probePushReq_IN)
+			buffer[probeIdx_IN] = probeData_IN;
+	end
  end
-
 
 // Do pop
 assign data_OUT = buffer[head];
 
+// Probe stuff
+assign probeData_OUT = buffer [probeIdx_IN];
 ////////////// DEBUG STUFF////////////////////////////////////////////////
 
 integer	idx;
@@ -135,18 +164,25 @@ always /*@(posedge clk) */begin
 		if (flush_IN) $display("\n----------------FLUSH!!!!!!-----------------\n");
 		$display("Count: %d %s%s"/* %s"*/, count, (emptyFlag_OUT)?"EMPTY!":" ", (fullFlag_OUT)?"FULL!":" ");//, (doBypassBuf)?"<---BYPASS!":" ");
 		$display("Push: %s(%x) Pop: %s(%x) %s", (pushReq_IN)?"Y":"N", data_IN, (popReq_IN)?"Y":"N", data_OUT, (validPush&&validPop)?"<---PUSHPOP":"       ");
+		
+		
+		$display("curTail:     %x, ", curTail_OUT);
+		$display("ProbeIdxIN:  %x, ProbeDataOUT: %x", probeIdx_IN, probeData_OUT);
+		$display("ProbePushIN: %x, ProbeDataIN:  %x", probePushReq_IN, probeData_IN);
+		
+		
 		for (idx = 0; idx < `MAX_BUF; idx = idx + 1)
 		begin
 			shortIdx = idx[ADDR_WIDTH-1:0];
 			
 			if (shortIdx == tail && shortIdx== head)
-				$display ("BUF[%d]: %x %s", idx, buffer[idx], "<--HEAD <--TAIL");
+				$display ("BUF[%d]: %x %s", idx, buffer[idx], 		"<--HEAD <--TAIL");
 			else begin
 				if (shortIdx == head)
-					$display ("BUF[%d]: %x %s", idx, buffer[idx], "<--HEAD");
+					$display ("BUF[%d]: %x %s", idx, buffer[idx], 	"<--HEAD");
 				
 				if (shortIdx == tail)
-					$display ("BUF[%d]: %x %s", idx, buffer[idx], "        <--TAIL");
+					$display ("BUF[%d]: %x %s", idx, buffer[idx], 	"        <--TAIL");
 			end
 
 			if (shortIdx != tail && shortIdx!= head)
