@@ -28,12 +28,13 @@ module MEM (	CLK,
 		MemWrite1, 
 		ALU_control1, 
 		aluResult1, 
-		aluResult1_PR, 
-		data_read1_PR
+		writeData1_WB, 
+		data_read1_PR,
+		taken_branch1_OUT,
+		taken_branch1_IN
 		);
 
-   output reg    [31: 0] aluResult1_PR;
-   output reg    [31: 0] data_read1_PR;
+   output reg    [31: 0] writeData1_WB;
    output reg    [31: 0] data_write_2DM; 
    output reg    [31: 0] data_address_2DM;
    output reg    [31: 0] Instr_OUT;
@@ -42,7 +43,8 @@ module MEM (	CLK,
    output reg            MemtoReg1_PR;
    output reg            do_writeback1_PR;
    output reg	         MemRead_2DM;
-   output reg            MemWrite_2DM;   
+   output reg            MemWrite_2DM;
+   output reg            taken_branch1_OUT; 
 
    input         [31: 0] aluResult1;
    input         [31: 0] data_read_fDM;
@@ -61,7 +63,10 @@ module MEM (	CLK,
    input                 MemtoReg1;
    input                 MemRead1;
    input                 MemWrite1;
-   input		 FREEZE;
+   input		 		FREEZE;
+   input            taken_branch1_IN;
+   
+   
 
    wire         [31: 0] data_read_aligned;
    wire         [31: 0] Dest_Value;
@@ -154,19 +159,19 @@ module MEM (	CLK,
      begin
        if(RESET == 1'b0)
          begin
-           MemtoReg1_PR <= 1'b0;
-           writeRegister1_PR <= 5'b0;
-           aluResult1_PR <= 32'b0;
-           data_read1_PR <= 32'b0;
-           do_writeback1_PR <= 1'b0;
+			MemtoReg1_PR <= 1'b0;
+			writeRegister1_PR <= 5'b0;
+			writeData1_WB <= 32'b0;
+			do_writeback1_PR <= 1'b0;
+			taken_branch1_OUT <= 1'b0;
          end
        else if(!FREEZE)
          begin
            MemtoReg1_PR <= MemtoReg1;
            writeRegister1_PR <= writeRegister1;
-           aluResult1_PR <= aluResult1;
-           data_read1_PR <= data_read_aligned;
-	   do_writeback1_PR <= do_writeback1;
+           writeData1_WB <= aluResult1 : data_read_aligned;
+           do_writeback1_PR <= do_writeback1;
+			taken_branch1_OUT <= taken_branch1_IN;
          end
      end
 
@@ -185,7 +190,7 @@ module MEM (	CLK,
 		$display("[MEM]:aluResult1:%x\t|aluResult2:%x",aluResult1,aluResult2);
                 $display("[MEM]:do_writeback1:%x\t\t|do_writeback2:%x",do_writeback1,do_writeback2);
 		$display("[MEM]:data_read1_PR:%x\t|data_read2_PR:%x",data_read1_PR,data_read2_PR);
-		$display("[MEM]:aluResult1_PR:%x\t|aluResult2_PR:%x",aluResult1_PR,aluResult2_PR);
+		$display("[MEM]:writeData1_WB:%x\t|aluResult2_PR:%x",writeData1_WB,aluResult2_PR);
 		$display("[MEM]:MemWrite1:%x\t\t|MemWrite2:%x",MemWrite1,MemWrite2);
 		$display("[MEM]:MemRead1:%x\t\t|MemRead2:%x",MemRead1,MemRead2);
                 $display("[MEM]:do_writeback1_PR:%x\t|do_writeback2_PR:%x",do_writeback1_PR,do_writeback2_PR);

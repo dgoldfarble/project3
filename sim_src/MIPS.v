@@ -309,7 +309,13 @@ module MIPS (	R2_output,
 		
 		// to rename
 	 	.writeRegister1_PR(wWrRegID_IDREN),
-		.isRegWriteInstr_OUT(isRegWrInstr_IDREN)
+		.isRegWriteInstr_OUT(isRegWrInstr_IDREN),
+		.isJump_OUT(jump_IDREN),
+		.isJumpReg_OUT(jumpReg_IDREN),
+		.isBranch_OUT(branch_IDREN),
+		.isLink_OUT(link_IDREN),
+		.PCA_OUT(PCA_IDREN),
+		.signExtImm_OUT(signExtImm_IDREN)
     );
 	/*
 EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM,
@@ -321,11 +327,14 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	MemWrite1_EXEM,Operand_A1_IDEXE,Operand_B1_IDEXE,MemtoReg1_IDEXE,MemtoReg1_EXEM,aluResult1_EXEM
 );*/
 	
+	wire	link_IDREN,	jumpReg_IDREN, jump_IDREN, branch_IDREN;
+	wire [31:0] PCA_IDREN, signExtImm_IDREN;
+	
 	////////////////////////////////////////////////////////////////////////////
 	// Q_IDREN (ID-RegRename queue)/////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
 
-	parameter Q_IDREN_DATAWIDTH = 1+1+5 + 2 + 32;
+	parameter Q_IDREN_DATAWIDTH = 126;
 	parameter Q_IDREN_ADDRWIDTH = 3;
 	
 	wire wQ_IDREN_empty;
@@ -333,13 +342,24 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire wQ_IDREN_pushReq;
 	wire wQ_IDREN_popReq;
 	wire wQ_IDREN_popValid;
-	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_pushData;
-	wire [Q_IDREN_DATAWIDTH -1:0] wQ_IDREN_popData;
-	assign wQ_IDREN_pushData = {MemWrite1_IDEXE,	//1
-								MemRead1_IDEXE, 	//1
-								wWrRegID_IDREN, 	//5
-								isRegWrInstr_IDREN, //2
-								Instr1_IDREN};		//32
+	wire [Q_IDREN_DATAWIDTH - 1:0] wQ_IDREN_pushData;
+	wire [Q_IDREN_DATAWIDTH - 1:0] wQ_IDREN_popData;
+	
+	assign wQ_IDREN_pushData = {ALUSrc1_IDEXE,		//1		125:125
+								signExtImm_IDREN,	//32	124:093
+								ALU_control1_IDEXE,	//6		092:087
+								PCA_IDREN,			//32	086:055
+								readRegisterA1_IDEXE,//5	054:050
+								readRegisterB1_IDEXE,//5	049:045
+								link_IDREN,			//1		044:044
+								jumpReg_IDREN,		//1		043:043
+								jump_IDREN,			//1		042:042
+								branch_IDREN,		//1		041:041
+								MemWrite1_IDEXE,	//1		040:040
+								MemRead1_IDEXE, 	//1		039:039
+								wWrRegID_IDREN, 	//5		038:034
+								isRegWrInstr_IDREN, //2		033:032
+								Instr1_IDREN};		//32	031:000
 				
 	queue #(.DATA_WIDTH(Q_IDREN_DATAWIDTH),
 			.ADDR_WIDTH(Q_IDREN_ADDRWIDTH),
@@ -369,26 +389,27 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	parameter ARCHREGS_DEPTH = 5;				// 32 architectural regs
 	
 	// Issue stage input data width
-	parameter RENISSUE_WIDTH = 	Q_IDREN_DATAWIDTH + PHYSREGS_DEPTH;	
+	parameter RENISSUE_WIDTH = 	149;	// See ren.v for members
 	
-	// Issue stage input data width
-	parameter RENROB_WIDTH = 	RENISSUE_WIDTH;	
+	// Rename-ROB data width
+	parameter RENROB_DATAWIDTH = 	RENISSUE_WIDTH;	
 	
 	wire wFreezeREN;
 	assign wFreezeREN = wQ_IDREN_empty || fROB_full_IN;
 	
-	wire wtIQ_pushReq_OUT;
-	wire [RENISSUE_WIDTH-1:0] wtIQ_pushData_OUT;
+	wire wtIQ_pushReq;
+	wire [RENISSUE_WIDTH-1:0] wtIQ_pushData;
 	wire wfIQ_full;
-	wire wtLSQ_pushReq_OUT;
-	wire [RENISSUE_WIDTH-1:0] wtLSQ_pushData_OUT;
+	wire wtLSQ_pushReq;
+	wire [RENISSUE_WIDTH-1:0] wtLSQ_pushData;
 	wire wfLSQ_full;
 	
 	REN #(	.IDREN_POP_WIDTH(Q_IDREN_DATAWIDTH),
 			.PHYSREGS_DEPTH(PHYSREGS_DEPTH),
 			.ARCHREGS_DEPTH(ARCHREGS_DEPTH),
 			.RENISSUE_WIDTH(RENISSUE_WIDTH),
-			.RENROB_WIDTH(RENROB_WIDTH))
+			.RENROB_DATAWIDTH(RENROB_DATAWIDTH),
+			.ROB_ADDRWIDTH(ROB_ADDRWIDTH))
 	rename (CLK, RESET, 
 	
 		.FREEZE(wFreezeREN),
@@ -399,17 +420,18 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		.fQ_IDREN_popData_IN (wQ_IDREN_popData),
 		
 		// Issue/LSQ
-		.tIQ_pushReq_OUT(wtIQ_pushReq_OUT),
-		.tIQ_pushData_OUT(wtIQ_pushData_OUT),
+		.tIQ_pushReq_OUT(wtIQ_pushReq),
+		.tIQ_pushData_OUT(wtIQ_pushData),
 		.fIQ_full_IN(wfIQ_full),
-		.tLSQ_pushReq_OUT(wtLSQ_pushReq_OUT),
-		.tLSQ_pushData_OUT(wtLSQ_pushData_OUT),
+		.tLSQ_pushReq_OUT(wtLSQ_pushReq),
+		.tLSQ_pushData_OUT(wtLSQ_pushData),
 		.fLSQ_full_IN(wfLSQ_full),
 		
 		// ROB
-		.fROB_full_IN(0),
-		.tROB_pushReq_OUT(tROB_pushReq),
+		.fROB_full_IN(wfROB_full),
+		.tROB_pushReq_OUT(wtROB_pushReq),
 		.tROB_pushData_OUT(),
+		.fROB_curTail_IN(),
 		
 		// Rename RAT overwrite
 		.tRenRatOverwrite_IN(0),
@@ -426,25 +448,25 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	always @(posedge CLK) begin
 		$display("+++++++++ MIPS - RENAME (OUT)ERFACE");
 		$display ("IQPUSH:%x I:%x IsRegWr:%x aRegID:%d IsMemR:%x IsMemWr:%x PhReg:%d", 
-					wtIQ_pushReq_OUT, 
-					wtIQ_pushData_OUT[31:0],
-					wtIQ_pushData_OUT[33:32],
-					wtIQ_pushData_OUT[38:34],
-					wtIQ_pushData_OUT[39],
-					wtIQ_pushData_OUT[40],		
-					wtIQ_pushData_OUT[46:41]);
+					wtIQ_pushReq, 
+					wtIQ_pushData[31:0],
+					wtIQ_pushData[33:32],
+					wtIQ_pushData[38:34],
+					wtIQ_pushData[39],
+					wtIQ_pushData[40],		
+					wtIQ_pushData[46:41]);
 
 		$display ("LSQPUSH:%x I:%x IsRegWr:%x aRegID:%d IsMemR:%x IsMemWr:%x PhReg:%d", 
-					wtLSQ_pushReq_OUT, 
-					wtLSQ_pushData_OUT[31:0],
-					wtLSQ_pushData_OUT[33:32],
-					wtLSQ_pushData_OUT[38:34],
-					wtLSQ_pushData_OUT[39],
-					wtLSQ_pushData_OUT[40],		
-					wtLSQ_pushData_OUT[46:41]);
+					wtLSQ_pushReq, 
+					wtLSQ_pushData[31:0],
+					wtLSQ_pushData[33:32],
+					wtLSQ_pushData[38:34],
+					wtLSQ_pushData[39],
+					wtLSQ_pushData[40],		
+					wtLSQ_pushData[46:41]);
 
 					
-		$display ("ROBpush: %x", tROB_pushReq);
+		$display ("ROBpush: %x", wtROB_pushReq);
 		// $display ("", );
 	end
 	
@@ -454,6 +476,29 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	// ISSUE - ISS.v////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
 	
+	wire wFreezeISS;
+	assign wFreezeISS = 
+	
+	ISS #(	.RENISS_WIDTH(RENISSUE_WIDTH),
+			.IDREN_WIDTH(Q_IDREN_DATAWIDTH))
+	issue (	CLK, RESET, 
+			.FREEZE(wFreezeISS),
+			
+			// IQ inputs
+			.IQ_pushReq_IN (wtIQ_pushReq),
+			.IQ_pushData_IN(wtIQ_pushData),
+			
+			// LSQ inputs
+			.LSQ_pushReq_IN(wtLSQ_pushReq),
+			.LSQ_pushData_IN(wtLSQ_pushData),				
+			
+		// outputs
+			// IQ outputs
+			.IQ_full_OUT(wfIQ_full),
+			
+			// LSQ outputs
+			.LSQ_full_OUT(wfLSQ_full),
+			);
 	
 	
 	
@@ -602,13 +647,15 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
  		Branch Misprediction flag
 		Instruction address -> for recovery from exception/misprediction
 		
- 		
+ 		SEE REN.v
 	*/
 		
+	parameter	ROB_DATAWIDTH 	= 0; 	// maybe diff from what RENAME pushes
+	parameter	ROB_ADDRWIDTH 	= 6;	// in bits
 	
 	
-	wire fROB_full_IN;
-	wire tROB_pushReq;
+	wire wfROB_full;
+	wire wtROB_pushReq;
 	
 	
 	
