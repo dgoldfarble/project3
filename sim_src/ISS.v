@@ -20,6 +20,7 @@ module ISS	(
 				
 			// outputs
 				IQLSQ_popData_OUT,
+				IQSelected,
 			
 				// IQ outputs
 				IQ_full_OUT,
@@ -34,12 +35,16 @@ parameter ROB_pointer_bits = 6;
 parameter RENISS_WIDTH = 0; // Width of the incoming data from Rename
 parameter IDREN_WIDTH = 0;
 
+parameter IQLSQ_WIDTH = 137; 
+parameter IQLSQ_DEPTH = 4;
+
 input CLK;
 input RESET;
 input FREEZE;
 
 //IQLSQ output
 output reg [IQLSQ_WIDTH-1:0] IQLSQ_popData_OUT;
+output reg 					IQSelected;
 
 //LSQ
 input LSQ_pushReq_IN;
@@ -60,13 +65,12 @@ input [RENISS_WIDTH-1:0] IQ_pushData_IN;
 // input                  LS_fwd_data_WB;
 
 assign IQLSQ_popData_OUT = wIQselected? wIQ_popData: (wLSQselected? wLSQ_popData: 0);
+assign IQSelected = wIQselected;
 
 //==============================================================================
 // CREATE COMMON IQ/LSQ ENTRY
 //==============================================================================
 
-parameter IQLSQ_WIDTH = 137; 
-parameter IQLSQ_DEPTH = 4;
 
 wire [RENISS_WIDTH-1:0] wRENISS_pushData;
 wire [IQLSQ_WIDTH-1:0] wIQLSQ_pushData;

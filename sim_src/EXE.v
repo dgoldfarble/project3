@@ -1,55 +1,54 @@
 //-----------------------------------------
 //           Execute Stage
 //-----------------------------------------
-module EXE(		// instruction 1 input
-				Instr1,
-				Operand_A1,
-				readRegisterA1,
-				Operand_B1,
-				readRegisterB1,
-				writeRegister1,
-				ROB_tail_pointer1,
-				ALU_control1,
-				Instr1_10_6,
-				ALUSrc1,
-				do_writeback1_ID,
-				// output
-				aluResult1_PR,
-				Instr1_PR,
-				writeRegister1_PR,
-				do_writeback1_PR,
-				// load/store instruction input
-				LS_Op1,		// should be a register value
-				LS_register1,
-				LS_Op2,		// should be a sign-extended immediate value
-				Dest_Value1,
-				ROB_LS_tail_pointer,
-				LS_destination_reg,
-				LS_ALU_control,
-				readDataB1,
-				MemtoReg1,
-				MemRead1,
-				MemWrite1,
-				// output
-				Dst1_PR,			// data alignment
-				readDataB1_PR,
-				address,
-				ALU_control1_PR, // has to do with data alignment
-				LS_destination_out,
-				MemRead1_PR,
-				MemWrite1_PR,
-				MemtoReg1_PR,	// 1 for a load 0 for a store
-				// forward data
+module EXE(	// outputs
+				ROBPointer_OUT,
+				PCA_OUT,
+				Instr1_OUT,
+				writeRegister1_OUT,
+				ALU_control1_OUT,
+				Dest_Value1_OUT,
+				RegDest_OUT,
+				Branch_flag_OUT,
+				mem_or_not_mem_OUT,
+
+				MemRead1_OUT,
+				MemWrite1_OUT,
+				Mem_Hazard_PR_OUT,
+
+				// COMMON SIGNALS
+				ROBPointer_IN,
+				PCA_IN,
+				Instr1_IN,
+				writeRegister1_IN,
+				readRegisterA1_IN,
+				Operand_A1_IN,
+				Immediate_IN,
+				ALU_control1_IN,
+				Dest_Value1_IN,
+				mem_or_not_mem_IN,
+
+				readRegisterB1_IN,
+				Operand_B1_IN,
+				Instr1_10_6_IN,
+				ALUSrc1_IN,
+				RegDest_IN,
+				Branch_flag_IN,
+				jump_flag_IN,
+				jump_register_IN,
+
+				MemRead1_IN,
+				MemWrite1_IN,
+					
+				   // forward data
 				fwd_data_1_COM,
 				fwd_reg_1_COM,
 				fwd_data_1_COM_flag,
 				LS_fwd_data_COM,
 				LS_fwd_reg_COM,
 				LS_fwd_data_COM_flag,
-				// other
-				FREEZE,
-				CLK,
-				RESET
+
+				FREEZE, CLK, RESET
 				);
 				
 	parameter ROBWIDTH = 6;
@@ -61,13 +60,14 @@ module EXE(		// instruction 1 input
     output reg		[ 5: 0]			writeRegister1_OUT;
     output reg		[ 5: 0]			ALU_control1_OUT;
     output reg		[31: 0]			Dest_Value1_OUT;
+    output reg		[31: 0]			aluresult_OUT;
+    output reg		[31: 0] 		address_OUT;
     output reg						RegDest_OUT;
     output reg						Branch_flag_OUT;
-    output reg						not_memory_flag_OUT;
+    output reg						mem_or_not_mem_OUT;
 	// LS output
     output reg						MemRead1_OUT;
     output reg						MemWrite1_OUT;
-    output reg						memory_flag_OUT;
 	output reg						Mem_Hazard_PR_OUT;
 
 	// COMMON SIGNALS
@@ -80,6 +80,7 @@ module EXE(		// instruction 1 input
     input		[31: 0]			Immediate_IN;
     input		[ 5: 0]			ALU_control1_IN;
     input		[31: 0]			Dest_Value1_IN;
+    input						mem_or_not_mem_IN;
 		// instruction 1 input
     input		[ 5: 0] 		readRegisterB1_IN;
     input		[31: 0]			Operand_B1_IN;
@@ -87,11 +88,11 @@ module EXE(		// instruction 1 input
     input						ALUSrc1_IN;
     input						RegDest_IN;
     input						Branch_flag_IN;
-    input						not_memory_flag_IN;
+    input						jump_flag_IN;
+    input						jump_register_IN;
 	// LS output
     input						MemRead1_IN;
     input						MemWrite1_IN;
-    input						memory_flag_IN;
     
    // forward data
    input          [31: 0] fwd_data_1_COM;
@@ -111,7 +112,7 @@ module EXE(		// instruction 1 input
    wire           [31: 0] OpA1, Operand1;
    wire           [31: 0] OpB1, Operand2;
    wire           [31: 0] OpLS1;
-   wire           [31: 0] OpLS2;   
+   wire           [31: 0] OpLS2;
    wire           [31: 0] Dst1;
    wire						Hazard_flag;
    reg            [31: 0] HI1;
@@ -192,12 +193,11 @@ module EXE(		// instruction 1 input
 			// instruction 1 input
 			RegDest_OUT <= 0;
 			Branch_flag_OUT <= 0;
-			not_memory_flag_OUT <= 0;
 			// LS output
 			Dest_Value1_OUT <= 0;
 			MemRead1_OUT <= 0;
 			MemWrite1_OUT <= 0;
-			memory_flag_OUT <= 0;
+			mem_or_not_mem_OUT <= 0;
 		end
 		else if(!FREEZE)
 		begin
@@ -208,14 +208,15 @@ module EXE(		// instruction 1 input
 			readRegisterA1_OUT <= readRegisterA1_IN;
 			ALU_control1_OUT <= ALU_control1_IN;
 			Dest_Value1_OUT <= Dest_Value1_IN;
+			aluresult_OUT <= jump_flag_IN? {CIA[31:28],Instr1[25:0],2'b0} : aluResult1; // this is dubious...
+			address_OUT <= address_out;
 			// instruction 1 input
 			RegDest_OUT <= RegDest_IN;
 			Branch_flag_OUT <= Branch_flag_IN;
-			not_memory_flag_OUT <= not_memory_flag_IN;
 			// LS output
 			MemRead1_OUT <= MemRead1_IN;
 			MemWrite1_OUT <= MemWrite1_IN;
-			memory_flag <= memory_flag_IN;
+			mem_or_not_mem_OUT <= mem_or_not_mem_IN;
 		end
 	end
  

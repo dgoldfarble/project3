@@ -28,7 +28,7 @@ module MEM (	CLK,
 		MemWrite1, 
 		ALU_control1, 
 		aluResult1, 
-		writeData1_WB, 
+//		writeData1_WB, 
 		data_read1_PR,
 		taken_branch1_OUT,
 		taken_branch1_IN
@@ -50,7 +50,7 @@ module MEM (	CLK,
    input         [31: 0] data_read_fDM;
    input         [31: 0] Dest_Value1;
    input         [31: 0] readDataB1;
-   input         [31: 0] writeData1_WB;
+//   input         [31: 0] writeData1_WB;
    input         [31: 0] Instr1;
    input         [ 5: 0] ALU_control1;
    input         [ 4: 0] writeRegister1_WB;

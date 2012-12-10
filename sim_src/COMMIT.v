@@ -114,7 +114,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 	assign wROBhead 		= (!wROB_empty)?wROB_popData:0;
 	assign wROBheadFin 		= wROBhead[RENROB_DATAWIDTH+1];
 	assign wROBheadSafe 	= !wROBhead[RENROB_DATAWIDTH]
-	assign wROBheadRdy2Com 	=  wROBheadFinished && wROBheadSafe;
+	assign wROBheadRdy2Com 	=  wROBheadFin && wROBheadSafe;
 	
 	always @(posedge CLK) begin
 		if (!RESET) begin
