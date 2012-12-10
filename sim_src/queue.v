@@ -31,7 +31,6 @@ module queue (	clk,
 				data_OUT,		// Popped data. Check popValid_OUT also
 				emptyFlag_OUT,	// high when buffer is empty
 				fullFlag_OUT,	// High when buffer is full
-				initData_IN,
 				flush_IN,
 				
 				// Current tail pointer
@@ -58,7 +57,6 @@ input						reset;
 input						pushReq_IN;
 input						popReq_IN;
 input 	[DATA_WIDTH-1:0]	data_IN;
-input 	[DATA_WIDTH-1:0]	initData_IN;
 input 						flush_IN;
 
 input 	[DATA_WIDTH-1:0]	probeData_IN;

@@ -375,7 +375,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			.popReq_IN(wQ_IDREN_popReq),	
 			.data_OUT(wQ_IDREN_popData),	
 			.emptyFlag_OUT(wQ_IDREN_empty),
-			.flush_IN(0));
+			.flush_IN(wfROB_flushALL));
 	
 	
 	
@@ -430,12 +430,12 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		// ROB
 		.fROB_full_IN(wfROB_full),
 		.tROB_pushReq_OUT(wtROB_pushReq),
-		.tROB_pushData_OUT(),
-		.fROB_curTail_IN(),
+		.tROB_pushData_OUT(wtROB_pushData),
+		.fROB_curTail_IN(wfROB_curTail),
 		
 		// Rename RAT overwrite
-		.tRenRatOverwrite_IN(0),
-		.tRenRatOverwriteData_IN(),
+		.tRenRatOverwrite_IN(wfRETRAT_copyRetRat),
+		.tRenRatOverwriteData_IN(wRetRat),
 		
 		// Freelist push interfaces
 		.tFreeL_pushReq_IN (0),
@@ -638,28 +638,50 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
  		Finished bit ---> Should be written when the result is ready on 
 						  one of the forwarding paths or the result has
 						  been written to the physical registers.
-		NumId tag -> for tracking instructions and giving 
-					 access for writing to the finished bit
 		Instr type
 		Arch: dest reg id
  		Phys: Dest mem addr or dest reg id
  		Dest write value
- 		Branch Misprediction flag
+ 		Exception/Branch Misprediction flag
 		Instruction address -> for recovery from exception/misprediction
 		
  		SEE REN.v
 	*/
+	parameter	RENROB_DATAWIDTH 	= RENISS_WIDTH; 	// maybe diff from what RENAME pushes
+	parameter	ROB_ADDRWIDTH 		= 6;	// in bits
+	
+	wire wCommitFreeze, wfROB_full, wtROB_pushReq, tROB_probePushReq_IN;
+	wire [RENROB_DATAWIDTH-1:0] wtROB_pushData, wfROB_probeData, wtROB_probePushData;
+	wire [ROB_ADDRWIDTH-1:0] 	wfROB_curTail, wtROB_probeIdx;
+	wire wfROB_flushALL, wfRETRAT_copyRetRat;	
+	reg [RETRAT_WIDTH-1:0] 	wRetRat [1<<RETRAT_DEPTH-1:0];
+
+	COMMIT #(	.RENROB_DATAWIDTH(ROB_DATAWIDTH), 
+				.ROB_ADDRWIDTH(ROB_ADDRWIDTH),
+				.RETRAT_WIDTH(PHYSREGS_DEPTH),
+				.RETRAT_DEPTH(ARCHREGS_DEPTH))
+	commit (CLK, RESET, .FREEZE(wCommitFreeze),
+	
+			.fROB_full_OUT(wfROB_full),
+			.tROB_pushReq_IN(wtROB_pushReq),
+			.tROB_pushData_IN(wtROB_pushData),
+			.fROB_curTail_OUT(wfROB_curTail),
+			
+			.tROB_probeIdx_IN(wtROB_probeIdx),
+			.tROB_probeSetFinBit_IN(),
+			.tROB_probeSetExpBit_IN(),
+			// .fROB_probeData_OUT(wfROB_probeData),
+			// .tROB_probePushReq_IN(wtROB_probePushReq),
+			// .tROB_probePushData_IN(wtROB_probePushData),
+			
 		
-	parameter	ROB_DATAWIDTH 	= 0; 	// maybe diff from what RENAME pushes
-	parameter	ROB_ADDRWIDTH 	= 6;	// in bits
-	
-	
-	wire wfROB_full;
-	wire wtROB_pushReq;
-	
-	
-	
-	
+			
+			.flushEm_OUT (wfROB_flushALL),
+		
+			.copyRetRat_OUT (wfRETRAT_copyRetRat),
+			.retRat_OUT (wRetRat)
+		   )
+
 	
 	////////////////////////////////////////////////////////////////////////////
 	// COMMIT - COMMIT.v///////////////////////////////////////////////////////
