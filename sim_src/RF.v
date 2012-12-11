@@ -112,7 +112,7 @@ module RF	(	FREEZE,
 	wire	[31: 0] wImmediate;
     wire	[ 5: 0]	wALU_control1;
 	assign wROBPointer = IQLSQ_popData_IN[037:032];
-    assign Instr = IQLSQ_popData_IN[031:000] ;
+    assign wInstr = IQLSQ_popData_IN[031:000] ;
     assign writeRegister1 = IQLSQ_popData_IN[095:090];
     assign readRegisterA1 = IQLSQ_popData_IN[081:076];
 	assign Immediate = IQLSQ_popData_IN[075:044];

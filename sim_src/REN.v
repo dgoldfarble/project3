@@ -47,7 +47,7 @@ module REN (	CLK,
 	parameter ROB_ADDRWIDTH		= 0;
 	
 	parameter RENRAT_WIDTH 		= PHYSREGS_DEPTH;
-	parameter RENRAT_DEPTH 		= ARCHREGS_DEPTH;
+	parameter RENRAT_DEPTH 		= 32;
 	
 	// OUTPUTS
 	
@@ -76,9 +76,9 @@ module REN (	CLK,
 	input 								fROB_full_IN;
 	
 	input [PHYSREGS_DEPTH-1:0]			tFreeL_pushData_IN;
-	input [RENRAT_WIDTH-1:0] 			tRenRatOverwriteData_IN [(1<<RENRAT_DEPTH)-1:0];
+	input [RENRAT_WIDTH*RENRAT_DEPTH-1:0] 			tRenRatOverwriteData_IN;// [(1<<RENRAT_DEPTH)-1:0];
 	input [IDREN_POP_WIDTH -1:0]		fQ_IDREN_popData_IN;
-	input [ROB_ADDRWIDTH-1:0] 			fROB_curTail_IN,
+	input [ROB_ADDRWIDTH-1:0] 			fROB_curTail_IN;
 	// input [RENROB_DATAWIDTH-1:0] 		fROB_probeData_IN;
 
 	reg rIQoverflow, rLSQoverflow;	
@@ -206,7 +206,7 @@ module REN (	CLK,
 			// may need to add more interfaces			
 			
 			tROB_pushReq_OUT <= (wIQpushable || wLSQpushable);
-			tROB_pushData_OUT < wROB_pushData;
+			tROB_pushData_OUT <= wROB_pushData;
 			
 		end else begin
 			tROB_pushReq_OUT <= 0;
@@ -237,7 +237,41 @@ module REN (	CLK,
 				// for (renratctr = 0; renratctr < 1<<RENRAT_DEPTH; renratctr = renratctr + 1) begin
 					// renrat [renratctr] <= tRenRatOverwriteData_IN[renratctr];
 				// end
-				renrat <= tRenRatOverwriteData_IN;
+				//renrat <= tRenRatOverwriteData_IN; // can't do this, have to unpack
+				// I AM NOT A CLEVER MAN
+				renrat[0] <= tRenRatOverwriteData_IN[5:0];
+				renrat[1] <= tRenRatOverwriteData_IN[11:6];
+				renrat[2] <= tRenRatOverwriteData_IN[17:12];
+				renrat[3] <= tRenRatOverwriteData_IN[23:18];
+				renrat[4] <= tRenRatOverwriteData_IN[29:24];
+				renrat[5] <= tRenRatOverwriteData_IN[35:30];
+				renrat[6] <= tRenRatOverwriteData_IN[41:36];
+				renrat[7] <= tRenRatOverwriteData_IN[47:42];
+				renrat[8] <= tRenRatOverwriteData_IN[53:48];
+				renrat[9] <= tRenRatOverwriteData_IN[59:54];
+				renrat[10] <= tRenRatOverwriteData_IN[65:60];
+				renrat[11] <= tRenRatOverwriteData_IN[71:66];
+				renrat[12] <= tRenRatOverwriteData_IN[77:72];
+				renrat[13] <= tRenRatOverwriteData_IN[83:78];
+				renrat[14] <= tRenRatOverwriteData_IN[89:84];
+				renrat[15] <= tRenRatOverwriteData_IN[95:90];
+				renrat[16] <= tRenRatOverwriteData_IN[101:96];
+				renrat[17] <= tRenRatOverwriteData_IN[107:102];
+				renrat[18] <= tRenRatOverwriteData_IN[113:108];
+				renrat[19] <= tRenRatOverwriteData_IN[119:114];
+				renrat[20] <= tRenRatOverwriteData_IN[125:120];
+				renrat[21] <= tRenRatOverwriteData_IN[131:126];
+				renrat[22] <= tRenRatOverwriteData_IN[137:132];
+				renrat[23] <= tRenRatOverwriteData_IN[143:138];
+				renrat[24] <= tRenRatOverwriteData_IN[149:144];
+				renrat[25] <= tRenRatOverwriteData_IN[155:150];
+				renrat[26] <= tRenRatOverwriteData_IN[161:156];
+				renrat[27] <= tRenRatOverwriteData_IN[167:162];
+				renrat[28] <= tRenRatOverwriteData_IN[173:168];
+				renrat[29] <= tRenRatOverwriteData_IN[179:174];
+				renrat[30] <= tRenRatOverwriteData_IN[185:180];
+				renrat[31] <= tRenRatOverwriteData_IN[191:186];
+
 
 			end else begin				
 				if (wDestRegReqd && !wQ_FreeL_popReq) begin

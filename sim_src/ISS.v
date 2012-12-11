@@ -21,7 +21,7 @@ module ISS	(
 			// outputs
 				IQLSQ_popData_OUT,
 				Valid_Instruction,
-				Mem_Instruciton,
+				Mem_Instruction,
 			
 				// IQ outputs
 				IQ_full_OUT,
@@ -46,7 +46,7 @@ input FREEZE;
 //IQLSQ output
 output reg [IQLSQ_WIDTH-1:0] IQLSQ_popData_OUT;
 output reg 					Valid_Instruction;
-output reg 					Mem_Instruciton;
+output reg 					Mem_Instruction;
 
 //LSQ
 input LSQ_pushReq_IN;
@@ -109,13 +109,16 @@ assign wIQLSQ_pushData = {	wRENISS_pushData[086:055],	// 136:105 PCA
 // Select whether to send IQ or LSQ
 reg		rPr; /* priority of IQ vs LSQ */ always @(posedge CLK) 	rPr <= rPr + 1;
 
-wire wIQselected, wLSQselected;
+
+
+	wire [137-1:0] wLSQ_headData, wLSQ_tailData;
+
+wire wIQselected, wLSQselected, wIQrdy, wLSQrdy;
 assign wIQselected = (wIQrdy && (!rPr || (rPr && !wLSQrdy)));
 assign wLSQselected = (wLSQrdy && (rPr || (!rPr && !wIQrdy)));
 assign IQLSQ_popData_OUT = wIQselected? wIQ_popData: (wLSQselected? wLSQ_popData: 0);
 assign Valid_Instruction = wIQselected || wLSQselected;
-assign Mem_Instruction = wLSQselected;Valid_Instruction
-
+assign Mem_Instruction = wLSQselected;
 assign wIQrdy = !wIQ_empty && instruction_ready;
 assign wLSQrdy = !wLSQ_empty && !busy_bits[wLSQ_headData[081:076]];
 
@@ -135,7 +138,7 @@ assign LSQ_full_OUT = wLSQ_full;
 // IQ AND LSQ - wires and stuff
 //==============================================================================	
 	
-	reg [1<<IQLSQ_DEPTH-1:0] 		IQ [IQLSQ_WIDTH-1:0];
+	reg [IQLSQ_WIDTH-1:0]	IQ [IQLSQ_DEPTH-1:0];
 	
 	wire [3:0] PE_Request, PE_Grant;
 	wire [15:0] request_bus, grant_bus;
@@ -143,7 +146,22 @@ assign LSQ_full_OUT = wLSQ_full;
 		
 	wire [IQLSQ_WIDTH-1:0] wIQ_popData, wLSQ_popData;
 	
-	assign request_bus = IQ[:][104]; // Ready bit
+	assign request_bus[0] = IQ[0][104]; // Ready bit
+	assign request_bus[1] = IQ[1][104]; // Ready bit
+	assign request_bus[2] = IQ[2][104]; // Ready bit
+	assign request_bus[3] = IQ[3][104]; // Ready bit
+	assign request_bus[4] = IQ[4][104]; // Ready bit
+	assign request_bus[5] = IQ[5][104]; // Ready bit
+	assign request_bus[6] = IQ[6][104]; // Ready bit
+	assign request_bus[7] = IQ[7][104]; // Ready bit
+	assign request_bus[8] = IQ[8][104]; // Ready bit
+	assign request_bus[9] = IQ[9][104]; // Ready bit
+	assign request_bus[10] = IQ[10][104]; // Ready bit
+	assign request_bus[11] = IQ[11][104]; // Ready bit
+	assign request_bus[12] = IQ[12][104]; // Ready bit
+	assign request_bus[13] = IQ[13][104]; // Ready bit
+	assign request_bus[14] = IQ[14][104]; // Ready bit
+	assign request_bus[15] = IQ[15][104]; // Ready bit
 
 	PE PE_top(FREEZE, PE_Request, PE_Grant, instruction_ready);
 	PE PE0 (PE_Grant[0], request_bus[3:0], grant_bus[3:0], PE_Request[0]);
@@ -162,7 +180,7 @@ assign LSQ_full_OUT = wLSQ_full;
 	// LSQ
 	wire wLSQ_pushReq, wLSQ_popReq, wLSQ_empty, wLSQ_full;
 	wire [5:0] wLSQ_srcReg, wLSQ_destReg_IN;
-	wire [IQLSQ_WIDTH-1:0] wLSQ_headData, wLSQ_tailData;
+//	wire [IQLSQ_WIDTH-1:0] wLSQ_headData, wLSQ_tailData;
 	
 	assign LSQ_full_OUT 	= wLSQ_full;
 	assign wLSQ_srcReg 		= wRENISS_pushData[98:93];

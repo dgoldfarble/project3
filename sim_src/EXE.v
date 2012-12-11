@@ -125,8 +125,9 @@ module EXE(	// outputs
    wire           [31: 0] OpLS2;
    wire           [31: 0] Dst1;
    wire						Hazard_flag;
-   reg            [31: 0] HI1;
-   reg            [31: 0] LO1;
+   wire						taken_branch1;
+   reg            [31: 0] HI1, HI2;
+   reg            [31: 0] LO1, LO2;
    reg                    comment;
    
 
@@ -135,48 +136,48 @@ module EXE(	// outputs
 
 
 	always begin
-		hazard_flag = 0;
+		Hazard_flag = 0;
 	// Forwarding for Instr 1	
 		// Operand A1
-		if(do_writeback1_PR && (writeRegister1_PR == readRegisterA1) // if the last instruction is an execute and writing back
-			OpA1 = aluResult1_PR;
-		else if(MemToReg1_PR && (LS_destination_out == readRegisterA1) // if the last instruction is a load and writing back
-			hazard_flag = 1;
-		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA1) // if the two instructions past is an execute and writing back
+		if(RegDest_OUT && (writeRegister1_OUT == readRegisterA1_IN)) // if the last instruction is an execute and writing back
+			OpA1 = aluresult_OUT;
+		else if(MemRead1_OUT && (writeRegister1_OUT == readRegisterA1_IN)) // if the last instruction is a load and writing back
+			Hazard_flag = 1;
+		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA1_IN)) // if the two instructions past is an execute and writing back
 			OpA1 = fwd_data_1_COM;
-		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1) // if two instructions past is a load and writing back
+		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1_IN)) // if two instructions past is a load and writing back
 			OpA1 = LS_fwd_data_COM;
-		else OpA1 = Operand_A1;
+		else OpA1 = Operand1;
 		
 		
 		// Operand B1
-		if(!ALUSrc1) begin
-			if(do_writeback1_PR && (writeRegister1_PR == readRegisterB1)
-				OpB1 = aluResult1_PR;
-			else if(MemToReg1_PR && (LS_destination_out == readRegisterB1)
-				hazard_flag = 1;
-			else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterB1)
+		if(!ALUSrc1_IN) begin
+			if(RegDest_OUT && (writeRegister1_OUT == readRegisterB1_IN))
+				OpB1 = aluresult_OUT;
+			else if(MemRead1_OUT && (writeRegister1_OUT == readRegisterB1_IN))
+				Hazard_flag = 1;
+			else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterB1_IN))
 				OpB1 = fwd_data_1_COM;
-			else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterB1)
+			else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterB1_IN))
 				OpB1 = LS_fwd_data_COM;
-			else OpB1 = Operand_B1;
+			else OpB1 = Operand2;
 		end
 		
 		
 		// LSQ register operand
-		if(do_writeback1_PR && (writeRegister1_PR == LS_register1)
-			OpB1 = aluResult1_PR;
-		else if(MemToReg1_PR && (LS_destination_out == LS_register1)
-			hazard_flag = 1;
-		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == LS_register1)
+		if(RegDest_OUT && (writeRegister1_OUT == readRegisterA1_IN))
+			OpB1 = aluresult_OUT;
+		else if(MemRead1_OUT && (writeRegister1_OUT == readRegisterA1_IN))
+			Hazard_flag = 1;
+		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA1_IN))
 			OpB1 = fwd_data_1_COM;
-		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == LS_register1)
+		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1_IN))
 			OpB1 = LS_fwd_data_COM;
-		else OpB1 = Operand_B1;
+		else OpB1 = Operand2;
 		
 		if(Branch_flag_IN) begin
 			Operand1 = PCA_IN;
-			Operand2 = (Immediate<<2);
+			Operand2 = (Immediate_IN<<2);
 		end
 		else begin
 			Operand1 = OpA1;
@@ -186,9 +187,9 @@ module EXE(	// outputs
 
 
 
-	ALU ALU1(HI1, LO1, aluResult1, Operand1, Operand2, ALU_control1, Instr1_10_6, CLK);
-	ALU AGU(0, 0, address_out, OpLS1, LS_Op2, LS_ALU_control, 0, CLK);
-	compare compare1(0,OpA1,OpB1,wInstr1,taken_branch1);
+	ALU ALU1(HI1, LO1, aluResult1, Operand1, Operand2, ALU_control1_IN, Instr1_10_6_IN, CLK);
+	ALU AGU(HI2, LO2, address_out, OpLS1, OpLS2, ALU_control1_IN, 0, CLK);
+	compare compare1(0,OpA1,OpB1,Instr1_IN,taken_branch1);
 		
 
 	//Pipeline Stage 1
@@ -198,7 +199,6 @@ module EXE(	// outputs
 			ROBPointer_OUT <= 0;
 			Instr1_OUT<= 0;
 			writeRegister1_OUT <= 0;
-			readRegisterA1_OUT <= 0;
 			ALU_control1_OUT <= 0;
 			// instruction 1 input
 			RegDest_OUT <= 0;
@@ -215,9 +215,8 @@ module EXE(	// outputs
 			ROBPointer_OUT <= ROBPointer_IN;
 			Instr1_OUT<= Instr1_IN;
 			PCA_OUT <= PCA_IN;
-			target_PC_OUT <= jump_flag_IN? {PCA_IN[31:28],Instr1[25:0],2'b0} : Branch_flag_IN? aluResult1 : 0;// this could cause problems
+			target_PC_OUT <= jump_flag_IN? {PCA_IN[31:28],Instr1_IN[25:0],2'b0} : Branch_flag_IN? aluResult1 : 0;// this could cause problems
 			writeRegister1_OUT <= writeRegister1_IN;
-			readRegisterA1_OUT <= readRegisterA1_IN;
 			ALU_control1_OUT <= ALU_control1_IN;
 			Dest_Value1_OUT <= Dest_Value1_IN;
 			aluresult_OUT <= aluResult1; // this is dubious...
@@ -247,8 +246,8 @@ module EXE(	// outputs
 		$display("[EXE]:readRegisterA1:%x\t\t|readRegisterA2:%x",readRegisterA1,readRegisterA2);
 		$display("[EXE]:readRegisterB1:%x\t\t|readRegisterB2:%x",readRegisterB1,readRegisterB2);
 		$display("[EXE]:writeRegister1:%x\t\t|writeRegister2:%x",writeRegister1,writeRegister2);
-		$display("[EXE]:do_writeback1_PR:%x\t|do_writeback2_PR:%x",do_writeback1_PR,do_writeback2_PR);
-		$display("[EXE]:writeRegister1_PR:%x\t|writeRegister2_PR:%x",writeRegister1_PR,writeRegister2_PR);
+		$display("[EXE]:RegDest_OUT:%x\t|do_writeback2_PR:%x",RegDest_OUT,do_writeback2_PR);
+		$display("[EXE]:writeRegister1_OUT:%x\t|writeRegister2_PR:%x",writeRegister1_OUT,writeRegister2_PR);
 		$display("[EXE]:aluResult1_PR:%x\t|aluResult2_PR:%x",aluResult1_PR,aluResult2_PR);
 		$display("[EXE]:do_writeback1_MEM:%x\t|do_writeback2_MEM:%x",do_writeback1_MEM,do_writeback2_MEM);
  		$display("[EXE]:writeRegister1_MEM:%x\t|writeRegister2_MEM:%x",writeRegister1_MEM,writeRegister2_MEM);

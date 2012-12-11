@@ -16,6 +16,7 @@ module MEM (	FREEZE, CLK, RESET,
 				Mem_Hazard_OUT,
 				ROBPointer_OUT,
 				
+				ROBPointer_IN,
 				Mem_Hazard_IN,
 				target_PC_IN,
 				aluResult1,
@@ -25,10 +26,7 @@ module MEM (	FREEZE, CLK, RESET,
 				readDataB1,
 				Instr1,
 				ALU_control1,
-				writeRegister1_WB,
 				writeRegister1,
-				ALUSrc1,
-				do_writeback1_WB,
 				do_writeback1,
 				MemRead1,
 				MemWrite1,
@@ -44,7 +42,7 @@ module MEM (	FREEZE, CLK, RESET,
    output reg    [31: 0] data_address_2DM;
    output reg    [31: 0] Instr_OUT;
    output reg    [31: 0] Data1_2ID;
-   output reg    [ 4: 0] writeRegister1_PR;
+   output reg    [ 5: 0] writeRegister1_PR;
    output reg            do_writeback1_PR;
    output reg	         MemRead_2DM;
    output reg            MemWrite_2DM;
@@ -64,7 +62,7 @@ module MEM (	FREEZE, CLK, RESET,
    input         [31: 0] Instr1;
    input         [ 5: 0] ALU_control1;
 //  input         [ 4: 0] writeRegister1_WB;
-   input         [ 4: 0] writeRegister1;
+   input         [ 5: 0] writeRegister1;
 //   input                 do_writeback1_WB;
    input                 do_writeback1;
    input                 CLK;
@@ -169,7 +167,7 @@ module MEM (	FREEZE, CLK, RESET,
      begin
        if(RESET == 1'b0)
          begin
-			writeRegister1_PR <= 5'b0;
+			writeRegister1_PR <= 6'b0;
 			result <= 32'b0;
 			do_writeback1_PR <= 1'b0;
 			taken_branch1_OUT <= 1'b0;

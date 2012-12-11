@@ -26,3 +26,5 @@ always begin
 		Grant_OUT[3] = Request_IN[3]&&(!Request_IN[2])&&(!Request_IN[1])&&(!Request_IN[0]);
 	end
 end
+
+endmodule

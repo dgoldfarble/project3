@@ -99,6 +99,7 @@ module MIPS (	R2_output,
    wire [ 5: 0]   ALU_control1_EXEM/*verilator public*/;
    wire [ 5: 0]   ALU_control2_EXEM/*verilator public*/;
    wire [ 4: 0]   wWrRegID_IDREN/*verilator public*/;
+   wire [ 4: 0]   writeRegister1_IDEXE/*verilator public*/;
    wire [ 4: 0]   writeRegister2_IDEXE/*verilator public*/;
    wire [ 4: 0]   writeRegister1_EXEM/*verilator public*/;
    wire [ 4: 0]   writeRegister2_EXEM/*verilator public*/;
@@ -168,6 +169,7 @@ module MIPS (	R2_output,
 
   iCache iCache1 (CLK, RESET, SYS, do_fetch, iBlkRead, iBlkWrite, Instr_address_2IM, block_read_fIM, block_write_2IM, Instr1_fIC, Instr2_fIC, IMISS, MVECT);
 
+	// URGENT: THESE CONNECTIONS I BELIEVE ARE WRONG
   dCache dCache1 (CLK, RESET, SYS, MemRead, MemWrite, DataWriteMode, dBlkRead, dBlkWrite, data_address_2DM, data_write_2DM, block_read_fDM, block_write_2DM, data_read_fDC, DMISS);
 
    integer n;
@@ -182,7 +184,8 @@ module MIPS (	R2_output,
      n = n+1;
    end
 
-	
+	wire branch_misprediction;
+	wire [31:0] branch_address_COMMIT;
    // Pipeline Stages Instantiation
    IF IF1( CLK,
         RESET,
@@ -285,7 +288,6 @@ module MIPS (	R2_output,
         readRegisterB1_IDEXE,	// 2REN
         taken_branch1_IDIF,					// 2IF - Removed from IF
         aluResult1_WBID,
-        writeRegister1_IDEXE,
         nextInstruction_address_IDIF,		// 2IF - Removed from IF
         Reg_ID,
         R2_output_ID,
@@ -304,8 +306,6 @@ module MIPS (	R2_output,
 		.fQ_IFID_empty_IN	(wQ_IFID_empty),
 		.tQ_IDREN_pushReq_OUT(wQ_IDREN_pushReq),
 		.fQ_IDREN_full_IN	(wQ_IDREN_full),
-		.control_signals(), 	// DAVID
-							// actually we'll need to duplicate this signal for super-scalar
 		
 		// to rename
 	 	.writeRegister1_PR(wWrRegID_IDREN),
@@ -388,6 +388,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	parameter PHYSREGS_DEPTH = 6;				// 64 phys regs
 	parameter ARCHREGS_DEPTH = 5;				// 32 architectural regs
 	
+	
 	// Issue stage input data width
 	parameter RENISSUE_WIDTH = 	183;	// See ren.v for members
 	
@@ -395,7 +396,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	parameter RENROB_DATAWIDTH = 	RENISSUE_WIDTH;	
 	
 	wire wFreezeREN;
-	assign wFreezeREN = wQ_IDREN_empty || fROB_full_IN;
+	wire wfROB_full;
+	assign wFreezeREN = wQ_IDREN_empty || wfROB_full;
 	
 	wire wtIQ_pushReq;
 	wire [RENISSUE_WIDTH-1:0] wtIQ_pushData;
@@ -403,6 +405,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire wtLSQ_pushReq;
 	wire [RENISSUE_WIDTH-1:0] wtLSQ_pushData;
 	wire wfLSQ_full;
+	wire FreeL_push_Req;
+	wire [5:0] FreeL_push_Data;
 	
 	REN #(	.IDREN_POP_WIDTH(Q_IDREN_DATAWIDTH),
 			.PHYSREGS_DEPTH(PHYSREGS_DEPTH),
@@ -438,8 +442,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		.tRenRatOverwriteData_IN(wRetRat),
 		
 		// Freelist push interfaces
-		.tFreeL_pushReq_IN (0),
-		.tFreeL_pushData_IN (0),
+		.tFreeL_pushReq_IN (FreeL_push_Req),
+		.tFreeL_pushData_IN (FreeL_push_Data),
 		.fFreeL_full_OUT()
 		);
 
@@ -476,14 +480,15 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	// ISSUE - ISS.v////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
 	
-	wire [136:0]	wIQLSQ_popData;
+	wire [RENISSUE_WIDTH-1:0]	wIQLSQ_popData;
 	wire			wValid_Instruction;
 	wire			wMem_Instruction;
 	wire wFreezeISS;
 	assign wFreezeISS = DMISS;
 	
 	ISS #(	.RENISS_WIDTH(RENISSUE_WIDTH),
-			.IDREN_WIDTH(Q_IDREN_DATAWIDTH))
+			.IDREN_WIDTH(Q_IDREN_DATAWIDTH),
+			.IQLSQ_WIDTH(RENISSUE_WIDTH))
 	issue (	CLK, RESET, 
 			.FREEZE(wFreezeISS),
 			
@@ -536,7 +541,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire			wMEM_RF_write_register_flag;
 	wire			wRF_RW_EXE_Valid_Instruction;
 		
-	RF_RW #(.ROBWIDTH(RENROB_DATAWIDTH),
+	RF #(.RENISS_WIDTH(RENROB_DATAWIDTH),
 			.IDREN_WIDTH(Q_IDREN_DATAWIDTH),
 			.ROBINDEX(ROB_ADDRWIDTH))
 	RF_ReadWrite	(	.FREEZE(DMISS), .CLK(CLK), .RESET(RESET),
@@ -644,7 +649,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.fwd_data_1_COM_flag(wMEM_EXE_RegDest),
 				.LS_fwd_data_COM(wMEM_ROB_Dest_Value1),
 				.LS_fwd_reg_COM(wMEM_ROB_writeRegister1),
-				.LS_fwd_data_COM_flag(wMEM_ROB_MemRead1),
+				.LS_fwd_data_COM_flag(MemRead),
 				
 				.Valid_Instruction_IN(wRF_RW_EXE_Valid_Instruction),
 				.Valid_Instruction_OUT(wEXE_MEM_Valid_Instruction),
@@ -674,8 +679,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.Data1_2ID(wMEM_ROB_Dest_Value1),
 				.writeRegister1_PR(wMEM_ROB_writeRegister1),
 				.do_writeback1_PR(wMEM_EXE_RegDest),
-				.MemRead_2DM(MemRead_2DM),
-				.MemWrite_2DM(MemWrite_2DM),
+				.MemRead_2DM(MemRead),
+				.MemWrite_2DM(MemWrite),
 				.taken_branch1_OUT(wMEM_ROB_Branch_flag),
 				.target_PC_OUT(wMEM_ROB_target_PC),
 				.Mem_Hazard_OUT(wMEM_ROB_Hazard),
@@ -686,7 +691,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.target_PC_IN(wEXE_MEM_target_PC),
 				.aluResult1(wEXE_MEM_aluresult),
 				.address(wEXE_MEM_address),
-				.data_read_fDM(data_read_fDM),
+				.data_read_fDM(data_read_fDC),
 				.Dest_Value1(wEXE_MEM_Dest_Value1),
 				.Instr1(wEXE_MEM_Instr1),
 				.ALU_control1(wEXE_MEM_ALU_control1),
@@ -701,8 +706,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.Valid_Instruction_OUT(wMEM_ROB_Valid_Instruction)
     );
 
-	assign wMEM_RF_write_register_flag = wMEM_ROB_MemRead1 || wMEM_EXE_RegDest;
-	assign wMEM_RF_write_register_data = wMEM_ROB_MemRead1 ? wMEM_ROB_Dest_Value1 : wMEM_EXE_RegDest ? wMEM_ROB_ALUResult : 0;
+	assign wMEM_RF_write_register_flag = MemRead || wMEM_EXE_RegDest;
+	assign wMEM_RF_write_register_data = MemRead ? wMEM_ROB_Dest_Value1 : wMEM_EXE_RegDest ? wMEM_ROB_ALUResult : 0;
 	assign wMEM_RF_write_register_index = wMEM_ROB_writeRegister1;
 
 
@@ -724,19 +729,21 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		
  		SEE REN.v
 	*/
-	parameter	RENROB_DATAWIDTH 	= RENISS_WIDTH; 	// maybe diff from what RENAME pushes
+//	parameter	RENROB_DATAWIDTH 	= RENISS_WIDTH; 	// maybe diff from what RENAME pushes
 	parameter	ROB_ADDRWIDTH 		= 6;	// in bits
+	parameter RETRAT_WIDTH 		= 6;
+	parameter RETRAT_DEPTH			= 32;
 	
-	wire wCommitFreeze, wfROB_full, wtROB_pushReq, tROB_probePushReq_IN;
+	wire wCommitFreeze, wtROB_pushReq, tROB_probePushReq_IN;
 	wire [RENROB_DATAWIDTH-1:0] wtROB_pushData, wfROB_probeData, wtROB_probePushData;
 	wire [ROB_ADDRWIDTH-1:0] 	wfROB_curTail, wtROB_probeIdx;
 	wire wfROB_flushALL, wfRETRAT_copyRetRat;	
-	reg [RETRAT_WIDTH-1:0] 	wRetRat [1<<RETRAT_DEPTH-1:0];
+	reg [RETRAT_WIDTH*RETRAT_DEPTH-1:0] 	wRetRat;// [1<<RETRAT_DEPTH-1:0];
 
-	COMMIT #(	.RENROB_DATAWIDTH(ROB_DATAWIDTH), 
+	COMMIT #(	.RENROB_DATAWIDTH(RENROB_DATAWIDTH), 
 				.ROB_ADDRWIDTH(ROB_ADDRWIDTH),
 				.RETRAT_WIDTH(PHYSREGS_DEPTH),
-				.RETRAT_DEPTH(ARCHREGS_DEPTH))
+				.RETRAT_DEPTH(RETRAT_DEPTH))
 	commit (CLK, RESET, .FREEZE(wCommitFreeze),
 	
 			.fROB_full_OUT(wfROB_full),
@@ -755,8 +762,15 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			.flushEm_OUT (wfROB_flushALL),
 		
 			.copyRetRat_OUT (wfRETRAT_copyRetRat),
-			.retRat_OUT (wRetRat)
+			.retRat_OUT (wRetRat),
+			
+			.tROB_reg_dest(wMEM_RF_write_register_flag),
+			.fROB_free_register_flag_OUT(FreeL_push_Req),
+			.fROB_free_register_Id_OUT(FreeL_push_Data),
+			
+			.fROB_target_PC_OUT(branch_address_COMMIT),
+			.fROB_set_PC_OUT(branch_misprediction)
 		   );
-	
+				
 	
 endmodule
