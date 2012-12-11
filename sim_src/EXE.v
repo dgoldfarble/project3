@@ -4,10 +4,13 @@
 module EXE(	// outputs
 				ROBPointer_OUT,
 				PCA_OUT,
+				target_PC_OUT,
 				Instr1_OUT,
 				writeRegister1_OUT,
 				ALU_control1_OUT,
 				Dest_Value1_OUT,
+				aluresult_OUT,
+				address_OUT,
 				RegDest_OUT,
 				Branch_flag_OUT,
 				mem_or_not_mem_OUT,
@@ -56,6 +59,7 @@ module EXE(	// outputs
    	// COMMON SIGNALS
 	output reg		[ROBWIDTH-1:0]	ROBPointer_OUT;
 	output reg		[31: 0] 		PCA_OUT;
+	output reg		[31: 0]			target_PC_OUT;
     output reg		[31: 0]			Instr1_OUT;
     output reg		[ 5: 0]			writeRegister1_OUT;
     output reg		[ 5: 0]			ALU_control1_OUT;
@@ -128,13 +132,13 @@ module EXE(	// outputs
 		hazard_flag = 0;
 	// Forwarding for Instr 1	
 		// Operand A1
-		if(do_writeback1_PR && (writeRegister1_PR == readRegisterA1)
+		if(do_writeback1_PR && (writeRegister1_PR == readRegisterA1) // if the last instruction is an execute and writing back
 			OpA1 = aluResult1_PR;
-		else if(MemToReg1_PR && (LS_destination_out == readRegisterA1)
+		else if(MemToReg1_PR && (LS_destination_out == readRegisterA1) // if the last instruction is a load and writing back
 			hazard_flag = 1;
-		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA1)
+		else if(fwd_data_1_COM_flag && (fwd_reg_1_COM == readRegisterA1) // if the two instructions past is an execute and writing back
 			OpA1 = fwd_data_1_COM;
-		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1)
+		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1) // if two instructions past is a load and writing back
 			OpA1 = LS_fwd_data_COM;
 		else OpA1 = Operand_A1;
 		
@@ -164,7 +168,7 @@ module EXE(	// outputs
 			OpB1 = LS_fwd_data_COM;
 		else OpB1 = Operand_B1;
 		
-		if(branch) begin
+		if(Branch_flag_IN) begin
 			Operand1 = PCA_IN;
 			Operand2 = (Immediate<<2);
 		end
@@ -204,15 +208,16 @@ module EXE(	// outputs
 			ROBPointer_OUT <= ROBPointer_IN;
 			Instr1_OUT<= Instr1_IN;
 			PCA_OUT <= PCA_IN;
+			target_PC_OUT <= jump_flag_IN? {PCA_IN[31:28],Instr1[25:0],2'b0} : Branch_flag_IN? aluResult1 : 0;// this could cause problems
 			writeRegister1_OUT <= writeRegister1_IN;
 			readRegisterA1_OUT <= readRegisterA1_IN;
 			ALU_control1_OUT <= ALU_control1_IN;
 			Dest_Value1_OUT <= Dest_Value1_IN;
-			aluresult_OUT <= jump_flag_IN? {CIA[31:28],Instr1[25:0],2'b0} : aluResult1; // this is dubious...
+			aluresult_OUT <= aluResult1; // this is dubious...
 			address_OUT <= address_out;
 			// instruction 1 input
 			RegDest_OUT <= RegDest_IN;
-			Branch_flag_OUT <= Branch_flag_IN;
+			Branch_flag_OUT <= Branch_flag_IN? taken_branch1 : jump_flag_IN? 1 : 0 ;
 			// LS output
 			MemRead1_OUT <= MemRead1_IN;
 			MemWrite1_OUT <= MemWrite1_IN;

@@ -127,8 +127,10 @@ module REN (	CLK,
 	// // // // // // // // // // // // // // // // // // // // // // // // //
 	
 	wire [RENISSUE_WIDTH-1:0] 	wPushDataIQLSQ;	
+	wire [31: 0]				wtarget;
 	
-	assign wPushDataIQLSQ = {	fQ_IDREN_popData_IN [125],	// 	150:150 1 ALU Src (Imm flag)
+	assign wPushDataIQLSQ = {	wtarget,					//  182:151 target PC placeholder
+								fQ_IDREN_popData_IN [125],	// 	150:150 1 ALU Src (Imm flag)
 								wDestRegReqd,				// 	149:149 1 Dest reg reqd
 								fQ_IDREN_popData_IN [124:93],// 148:117 32 signExt Imm
 								fQ_IDREN_popData_IN [92:87], // 116:111 6 ALU control
