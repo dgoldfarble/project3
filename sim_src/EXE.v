@@ -13,7 +13,7 @@ module EXE(	// outputs
 				address_OUT,
 				RegDest_OUT,
 				Branch_flag_OUT,
-				mem_or_not_mem_OUT,
+				Mem_Instruction_OUT,
 
 				MemRead1_OUT,
 				MemWrite1_OUT,
@@ -29,7 +29,7 @@ module EXE(	// outputs
 				Immediate_IN,
 				ALU_control1_IN,
 				Dest_Value1_IN,
-				mem_or_not_mem_IN,
+				Mem_Instruction_IN,
 
 				readRegisterB1_IN,
 				Operand_B1_IN,
@@ -42,6 +42,8 @@ module EXE(	// outputs
 
 				MemRead1_IN,
 				MemWrite1_IN,
+				Valid_Instruction_IN,
+				Valid_Instruction_OUT,
 					
 				   // forward data
 				fwd_data_1_COM,
@@ -68,7 +70,7 @@ module EXE(	// outputs
     output reg		[31: 0] 		address_OUT;
     output reg						RegDest_OUT;
     output reg						Branch_flag_OUT;
-    output reg						mem_or_not_mem_OUT;
+    output reg						Mem_Instruction_OUT;
 	// LS output
     output reg						MemRead1_OUT;
     output reg						MemWrite1_OUT;
@@ -84,7 +86,7 @@ module EXE(	// outputs
     input		[31: 0]			Immediate_IN;
     input		[ 5: 0]			ALU_control1_IN;
     input		[31: 0]			Dest_Value1_IN;
-    input						mem_or_not_mem_IN;
+    input						Mem_Instruction_IN;
 		// instruction 1 input
     input		[ 5: 0] 		readRegisterB1_IN;
     input		[31: 0]			Operand_B1_IN;
@@ -105,6 +107,10 @@ module EXE(	// outputs
    input          [31: 0] LS_fwd_data_COM;
    input          [ 5: 0] LS_fwd_reg_COM;
    input                  LS_fwd_data_COM_flag;
+   
+   
+   input 					Valid_Instruction_IN;
+   output reg 				Valid_Instruction_OUT;
    
    // other
    input                  FREEZE;
@@ -201,7 +207,8 @@ module EXE(	// outputs
 			Dest_Value1_OUT <= 0;
 			MemRead1_OUT <= 0;
 			MemWrite1_OUT <= 0;
-			mem_or_not_mem_OUT <= 0;
+			Mem_Instruction_OUT <= 0;
+			Valid_Instruction_OUT <= 1'b0;
 		end
 		else if(!FREEZE)
 		begin
@@ -221,7 +228,8 @@ module EXE(	// outputs
 			// LS output
 			MemRead1_OUT <= MemRead1_IN;
 			MemWrite1_OUT <= MemWrite1_IN;
-			mem_or_not_mem_OUT <= mem_or_not_mem_IN;
+			Mem_Instruction_OUT <= Mem_Instruction_IN;
+			Valid_Instruction_OUT <= Valid_Instruction_IN;
 		end
 	end
  

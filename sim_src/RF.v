@@ -3,10 +3,13 @@ module RF	(	FREEZE,
 				RESET,
 				//inputs
 				IQLSQ_popData_IN,
-				IQSelected,
+				Valid_Instruction_IN,
+				Mem_Instruction_IN,
+				Mem_Instruction_OUT,
 				IQ_LSQ_pop,
 				//unpacked outputs
 				// common
+				Valid_Instruction_OUT,
 				ROBPointer,
 				PCA,
 				Instr1,
@@ -41,9 +44,12 @@ module RF	(	FREEZE,
 	parameter ROBINDEX = 6;
 	
 	input [RENISS_WIDTH-1:0]	IQLSQ_popData_IN;
-	input 						IQSelected;
+	input 						Valid_Instruction_IN;
+	input						Mem_Instruction_IN;
 	
 	output reg					IQ_LSQ_pop;
+	output reg					Valid_Instruction_OUT;
+	output reg					Mem_Instruction_OUT;
 	
 	// other
 	input                  FREEZE;
@@ -79,7 +85,7 @@ module RF	(	FREEZE,
     input							write_register_flag;
     
     wire							wmem_or_not_mem;
-    assign wmem_or_not_mem = !IQSelected;
+    assign wmem_or_not_mem = Mem_Instruction_IN;
     
     
 		// 103:103	1 link
@@ -137,7 +143,7 @@ module RF	(	FREEZE,
 			Dest_Value1 <= 0;
 			MemRead1 <= 0;
 			MemWrite1 <= 0;
-			wmem_or_not_mem <= 0;
+			Valid_Instruction_OUT <= 1'b0;
 		end
 		else if(!FREEZE)
 		begin
@@ -162,7 +168,7 @@ module RF	(	FREEZE,
 			// LS output
 			MemRead1 <= wmem_or_not_mem? IQLSQ_popData_IN[098:098] : 0;
 			MemWrite1 <= wmem_or_not_mem? IQLSQ_popData_IN[099:099] : 0;
-			
+			Valid_Instruction_OUT <= Valid_Instruction_IN;
 		end
 	end
 	

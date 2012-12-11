@@ -477,7 +477,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	////////////////////////////////////////////////////////////////////////////
 	
 	wire [136:0]	wIQLSQ_popData;
-	wire			wIQSelected;
+	wire			wValid_Instruction;
+	wire			wMem_Instruction;
 	wire wFreezeISS;
 	assign wFreezeISS = DMISS;
 	
@@ -496,7 +497,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			
 		// outputs
 			.IQLSQ_popData_OUT(wIQLSQ_popData),
-			.IQSelected(wIQSelected),
+			.Valid_Instruction(wValid_Instruction),
+			.Mem_Instruction(wMem_Instruction),
 			// IQ outputs
 			.IQ_full_OUT(wfIQ_full),
 			
@@ -518,7 +520,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire [31: 0]	wRF_RW_EXE_Operand_A1;
 	wire [31: 0]	wRF_RW_EXE_Immediate;
 	wire [ 5: 0]	wRF_RW_EXE_ALU_control1;
-	wire			wRF_RW_EXE_mem_or_not_mem;
+	wire			wRF_RW_EXE_Mem_Instruction;
 	wire [ 5: 0]	wRF_RW_EXE_readRegisterB1;
 	wire [31: 0]	wRF_RW_EXE_Operand_B1;
 	wire [ 4: 0]	wRF_RW_EXE_Instr1_10_6;	
@@ -532,6 +534,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire [31: 0]	wMEM_RF_write_register_data;
 	wire [ 5: 0]	wMEM_RF_write_register_index;
 	wire			wMEM_RF_write_register_flag;
+	wire			wRF_RW_EXE_Valid_Instruction;
 		
 	RF_RW #(.ROBWIDTH(RENROB_DATAWIDTH),
 			.IDREN_WIDTH(Q_IDREN_DATAWIDTH),
@@ -539,10 +542,12 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	RF_ReadWrite	(	.FREEZE(DMISS), .CLK(CLK), .RESET(RESET),
 						//inputs
 						.IQLSQ_popData_IN(wIQLSQ_popData),
-						.IQSelected(wIQSelected),
+						.Valid_Instruction_IN(wValid_Instruction),
+						.Mem_Instruction_IN(wMem_Instruction),
 						.IQ_LSQ_pop(wIQ_LSQ_pop),
 						//unpacked outputs
 						// common
+						.Valid_Instruction_OUT(wRF_RW_EXE_Valid_Instruction),
 						.ROBPointer(wRF_RW_EXE_ROBPointer),
 						.PCA(wRF_RW_EXE_PCA),
 						.Instr1(wRF_RW_EXE_Instr1),
@@ -551,7 +556,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 						.Operand_A1(wRF_RW_EXE_Operand_A1),
 						.Immediate(wRF_RW_EXE_Immediate),
 						.ALU_control1(wRF_RW_EXE_ALU_control1),
-						.mem_or_not_mem(wRF_RW_EXE_mem_or_not_mem),
+						.Mem_Instruction_OUT(wRF_RW_EXE_Mem_Instruction),
 						// not memory
 						.readRegisterB1(wRF_RW_EXE_readRegisterB1),
 						.Operand_B1(wRF_RW_EXE_Operand_B1),
@@ -583,13 +588,14 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire [ 5: 0]	wEXE_MEM_writeRegister1;
 	wire [ 5: 0]	wEXE_MEM_readRegisterA1;
 	wire [ 5: 0]	wEXE_MEM_ALU_control1;
-	wire			wEXE_MEM_mem_or_not_mem;
+	wire			wEXE_MEM_Mem_Instruction;
 	wire 		 	wEXE_MEM_RegDest;
 	wire 		 	wEXE_MEM_Branch_flag;
 	wire [31: 0]	wEXE_MEM_Dest_Value1;
 	wire 			wEXE_MEM_MemRead1;
 	wire			wEXE_MEM_MemWrite1;
 	wire			wEXE_MEM_Hazard;
+	wire			wEXE_MEM_Valid_Instruction;
 	
 	EXE EXE1(	// outputs
 				.ROBPointer_OUT(wEXE_MEM_ROBPointer),
@@ -603,7 +609,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.address_OUT(wEXE_MEM_address),
 				.RegDest_OUT(wEXE_MEM_RegDest),
 				.Branch_flag_OUT(wEXE_MEM_Branch_flag),
-				.mem_or_not_mem_OUT(wEXE_MEM_mem_or_not_mem),
+				.Mem_Instruction_OUT(wEXE_MEM_Mem_Instruction),
 
 				.MemRead1_OUT(wEXE_MEM_MemRead1),
 				.MemWrite1_OUT(wEXE_MEM_MemWrite1),
@@ -619,7 +625,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.Immediate_IN(wRF_RW_EXE_Immediate),
 				.ALU_control1_IN(wRF_RW_EXE_ALU_control1),
 				.Dest_Value1_IN(wRF_RW_EXE_Dest_Value1),
-				.mem_or_not_mem_IN(wRF_RW_EXE_mem_or_not_mem),
+				.Mem_Instruction_IN(wRF_RW_EXE_Mem_Instruction),
 
 				.readRegisterB1_IN(wRF_RW_EXE_readRegisterB1),
 				.Operand_B1_IN(wRF_RW_EXE_Operand_B1),
@@ -633,13 +639,15 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.MemWrite1_IN(wRF_RW_EXE_MemWrite1),
 					
 				   // forward data
-				.fwd_data_1_COM(),
-				.fwd_reg_1_COM(),
-				.fwd_data_1_COM_flag(),
-				.LS_fwd_data_COM(),
-				.LS_fwd_reg_COM(),
-				.LS_fwd_data_COM_flag(),
-
+				.fwd_data_1_COM(wMEM_ROB_ALUResult),
+				.fwd_reg_1_COM(wMEM_ROB_writeRegister1),
+				.fwd_data_1_COM_flag(wMEM_EXE_RegDest),
+				.LS_fwd_data_COM(wMEM_ROB_Dest_Value1),
+				.LS_fwd_reg_COM(wMEM_ROB_writeRegister1),
+				.LS_fwd_data_COM_flag(wMEM_ROB_MemRead1),
+				
+				.Valid_Instruction_IN(wRF_RW_EXE_Valid_Instruction),
+				.Valid_Instruction_OUT(wEXE_MEM_Valid_Instruction),
 				.FREEZE(FREEZE), .CLK(CLK), .RESET(RESET)
 				);
 
@@ -648,26 +656,22 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	////////////////////////////////////////////////////////////////////////////
 	// MEM - MEM.v?/////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-	wire [ROB_ADDRWIDTH-1:0] wMEM_ROB_ROBPointer;
-	wire [31: 0]	wMEM_ROB_PCA;
 	wire [31: 0]	wMEM_ROB_target_PC;
 	wire [31: 0]	wMEM_ROB_Instr1;
+	wire [31: 0]	wMEM_ROB_ALUResult;
 	wire [ 5: 0]	wMEM_ROB_writeRegister1;
-	wire [ 5: 0]	wMEM_ROB_readRegisterA1;
-	wire [ 5: 0]	wMEM_ROB_ALU_control1;
-	wire			wMEM_ROB_mem_or_not_mem_OUT;
 	wire 		 	wMEM_ROB_Branch_flag;
 	wire [31: 0]	wMEM_ROB_Dest_Value1;
-	wire 			wMEM_ROB_MemRead1;
-	wire			wMEM_ROB_MemWrite1;
 	wire			wMEM_ROB_Hazard;
 	wire			wMEM_EXE_RegDest;
+	wire			wMEM_ROB_Valid_Instruction;
 
    MEM MEM1( .FREEZE(FREEZE), .CLK(CLK), .RESET(RESET),
+				.result(wMEM_ROB_ALUResult),
 				.data_write_2DM(data_write_2DM), 
 				.data_address_2DM(data_address_2DM),
 				.Instr_OUT(wMEM_ROB_Instr1),
-				.Data1_2ID(),
+				.Data1_2ID(wMEM_ROB_Dest_Value1),
 				.writeRegister1_PR(wMEM_ROB_writeRegister1),
 				.do_writeback1_PR(wMEM_EXE_RegDest),
 				.MemRead_2DM(MemRead_2DM),
@@ -675,7 +679,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.taken_branch1_OUT(wMEM_ROB_Branch_flag),
 				.target_PC_OUT(wMEM_ROB_target_PC),
 				.Mem_Hazard_OUT(wMEM_ROB_Hazard),
-				.ROBPointer_OUT(wMEM_ROB_ROBPointer),
+				.ROBPointer_OUT(wtROB_probeIdx),
 				
 				.ROBPointer_IN(wEXE_MEM_ROBPointer),
 				.Mem_Hazard_IN(wEXE_MEM_Hazard),                
@@ -691,14 +695,17 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.MemRead1(wEXE_MEM_MemRead1),
 				.MemWrite1(wEXE_MEM_MemWrite1),
 				.taken_branch1_IN(wEXE_MEM_Branch_flag),
-				.mem_or_not_mem_IN(wEXE_MEM_mem_or_not_mem)
+				.Mem_Instruction_IN(wEXE_MEM_Mem_Instruction),
+				
+				.Valid_Instruction_IN(wEXE_MEM_Valid_Instruction),
+				.Valid_Instruction_OUT(wMEM_ROB_Valid_Instruction)
     );
 
-	assign wMEM_RF_write_register_flag = wMEM_ROB_MemRead1 || 
-	assign wMEM_RF_write_register_data =
-	assign wMEM_RF_write_register_index =
+	assign wMEM_RF_write_register_flag = wMEM_ROB_MemRead1 || wMEM_EXE_RegDest;
+	assign wMEM_RF_write_register_data = wMEM_ROB_MemRead1 ? wMEM_ROB_Dest_Value1 : wMEM_EXE_RegDest ? wMEM_ROB_ALUResult : 0;
+	assign wMEM_RF_write_register_index = wMEM_ROB_writeRegister1;
 
-	
+
 	////////////////////////////////////////////////////////////////////////////
 	// COMMIT - COMMIT.v///////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
@@ -738,14 +745,13 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			.fROB_curTail_OUT(wfROB_curTail),
 			
 			.tROB_probeIdx_IN(wtROB_probeIdx),
-			.tROB_probeSetFinBit_IN(),
-			.tROB_probeSetExpBit_IN(),
+			.tROB_probeSetFinBit_IN(wMEM_ROB_Valid_Instruction),
+			.tROB_probeSetExpBit_IN(wMEM_ROB_Hazard),
+			.tROB_probe_taken_branch(wMEM_ROB_Branch_flag),
+			.tROB_probe_target_PC(wMEM_ROB_target_PC),
 			// .fROB_probeData_OUT(wfROB_probeData),
 			// .tROB_probePushReq_IN(wtROB_probePushReq),
 			// .tROB_probePushData_IN(wtROB_probePushData),
-			
-		
-			
 			.flushEm_OUT (wfROB_flushALL),
 		
 			.copyRetRat_OUT (wfRETRAT_copyRetRat),

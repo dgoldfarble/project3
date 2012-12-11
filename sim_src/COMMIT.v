@@ -28,7 +28,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 				//-------------------------------------------------------------
 				// ROB
 				//-------------------------------------------------------------
-				fROB_full_OUT,				
+				fROB_full_OUT,	
 				tROB_pushReq_IN,
 				tROB_pushData_IN,
 				fROB_curTail_OUT,
@@ -39,6 +39,8 @@ module COMMIT ( CLK, RESET, FREEZE,
 				
 				tROB_probeSetFinBit_IN,
 				tROB_probeSetExpBit_IN,
+				tROB_probe_taken_branch,
+				tROB_probe_target_PC,
 				
 				flushEm_OUT,
 				
@@ -58,6 +60,8 @@ module COMMIT ( CLK, RESET, FREEZE,
 				input 							tROB_probeSetFinBit_IN, tROB_probeSetExpBit_IN;
 				input 	[RENROB_DATAWIDTH-1:0] 	tROB_pushData_IN, tROB_probePushData_IN;
 				input	[ROB_ADDRWIDTH-1:0]		tROB_probeIdx_IN;
+				input 	[31:0]					tROB_probe_target_PC;
+				input							tROB_probe_taken_branch;
 				
 				output 	[RENROB_DATAWIDTH-1:0] 	fROB_probeData_OUT;
 				output  reg 					fROB_full_OUT;
@@ -87,9 +91,30 @@ module COMMIT ( CLK, RESET, FREEZE,
 	parameter pFINISH_DEFAULT = 1'b0; parameter pEXCEPT_DEFAULT = 1'b0;
 	
 	assign wROB_pushData 		= {pFINISH_DEFAULT, pEXCEPT_DEFAULT, tROB_pushData_IN};
-	assign wROB_probeDataIn 	= {pFINISH_DEFAULT, pEXCEPT_DEFAULT, tROB_probePushData_IN};	
+	assign wROB_probeDataIn 	= {tROB_probeSetFinBit_IN, tROB_probeSetExpBit_IN, tROB_probePushData_IN};	
 	assign fROB_probeData_OUT 	= wROB_probeDataOut[RENROB_DATAWIDTH-1:0];
-				
+	/*							//  182:151 target PC placeholder
+	fQ_IDREN_popData_IN [125],	// 	150:150 1 ALU Src (Imm flag)
+	wDestRegReqd,				// 	149:149 1 Dest reg reqd
+	fQ_IDREN_popData_IN [124:93]// 148:117 32 signExt Imm
+	fQ_IDREN_popData_IN [92:87],// 116:111 6 ALU control
+	fROB_curTail_IN,			//	110:105	6 						
+	rPhysSrc2Reg, 				//	104:099	6
+	rPhysSrc1Reg, 				//	098:093	6
+	rPhysDestReg,				//	092:087	6
+	fQ_IDREN_popData_IN [86:55],// 086:055	32 PCA_IDREN
+	fQ_IDREN_popData_IN [54:50],// 054:050	5 readRegisterA1_IDEXE
+	fQ_IDREN_popData_IN [49:45],// 049:045	5 readRegisterB1_IDEXE
+	fQ_IDREN_popData_IN [44:44],// 044:044	1 link_IDREN
+	fQ_IDREN_popData_IN [43:43],// 043:043	1 jumpReg_IDREN
+	fQ_IDREN_popData_IN [42:42],// 042:042	1 jump_IDREN
+	fQ_IDREN_popData_IN [41:41],// 041:041	1 branch_IDREN
+	fQ_IDREN_popData_IN [40:40],// 040:040	1 MemWrite1_IDEXE
+	fQ_IDREN_popData_IN [39:39],// 039:039	1 MemRead1_IDEXE
+	fQ_IDREN_popData_IN [38:34],// 038:034	5 wWrRegID_IDREN
+	fQ_IDREN_popData_IN [33:32],// 033:032	2 isRegWrInstr_IDREN
+	fQ_IDREN_popData_IN [31:00]}// 031:000	32 Instr1_IDREN	*/
+	
 	wire [ROB_DATAWIDTH-1:0] wROB_pushData, wROB_popData, wROB_probeDataOut, wROB_probeDataIn;
 	wire wROB_popReq, wROB_empty;
 	
@@ -107,13 +132,13 @@ module COMMIT ( CLK, RESET, FREEZE,
 	//-------------------------------------------------------------------------
 	// ROB: Operations
 	//-------------------------------------------------------------------------
-	
+
 	wire [ROB_DATAWIDTH-1:0]	wROBhead;
 	wire wROBheadFin, wROBheadSafe, wROBheadRdy2Com;
 	
 	assign wROBhead 		= (!wROB_empty)?wROB_popData:0;
 	assign wROBheadFin 		= wROBhead[RENROB_DATAWIDTH+1];
-	assign wROBheadSafe 	= !wROBhead[RENROB_DATAWIDTH]
+	assign wROBheadSafe 	= !wROBhead[RENROB_DATAWIDTH];
 	assign wROBheadRdy2Com 	=  wROBheadFin && wROBheadSafe;
 	
 	always @(posedge CLK) begin
@@ -127,23 +152,9 @@ module COMMIT ( CLK, RESET, FREEZE,
 			if (wROBheadRdy2Com) begin
 				// We're ready to pop.
 				wROB_popReq <= 1;
-				
 				// Now use wROB_popData and do your thang.
 				
-				
-				
-				
 				// Access current RetRat, add it to free list
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
 				
 			end else begin
 				// Cannot pop ROB
@@ -154,8 +165,6 @@ module COMMIT ( CLK, RESET, FREEZE,
 				if (wROB_empty || !wROBheadFinished) begin
 					// Either ROB is empty or the head is not yet ready.
 					// Chill. Do nothing.
-					
-					
 					
 				end else begin
 					if (!wROBheadSafe) begin
@@ -169,15 +178,6 @@ module COMMIT ( CLK, RESET, FREEZE,
 						copyRetRat_OUT <= 0;
 						
 						// ANything else?
-						
-						
-						
-						
-						
-						
-						
-						
-						
 						
 					end
 				end

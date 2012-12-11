@@ -23,7 +23,6 @@ module MEM (	FREEZE, CLK, RESET,
 				data_read_fDM,
 				Dest_Value1,
 				readDataB1,
-				result,
 				Instr1,
 				ALU_control1,
 				writeRegister1_WB,
@@ -33,7 +32,11 @@ module MEM (	FREEZE, CLK, RESET,
 				do_writeback1,
 				MemRead1,
 				MemWrite1,
-				taken_branch1_IN
+				taken_branch1_IN,
+				
+				Valid_Instruction_IN,
+				Valid_Instruction_OUT,
+				Mem_Instruction_IN
 			);
 
    output reg    [31: 0] result;
@@ -60,9 +63,9 @@ module MEM (	FREEZE, CLK, RESET,
    input         [31: 0] readDataB1;
    input         [31: 0] Instr1;
    input         [ 5: 0] ALU_control1;
-   input         [ 4: 0] writeRegister1_WB;
+//  input         [ 4: 0] writeRegister1_WB;
    input         [ 4: 0] writeRegister1;
-   input                 do_writeback1_WB;
+//   input                 do_writeback1_WB;
    input                 do_writeback1;
    input                 CLK;
    input                 RESET;
@@ -70,8 +73,10 @@ module MEM (	FREEZE, CLK, RESET,
    input                 MemWrite1;
    input                 FREEZE;
    input                 taken_branch1_IN;
-   input                 mem_or_not_mem_IN;
+   input                 Mem_Instruction_IN;
    
+   input 					Valid_Instruction_IN;
+   output reg 				Valid_Instruction_OUT;
    
 
    wire         [31: 0] data_read_aligned;
@@ -92,8 +97,8 @@ module MEM (	FREEZE, CLK, RESET,
    assign Instr_OUT = Instr1;
    assign MemRead_2DM = MemRead1;
    assign MemWrite_2DM = MemWrite1;
-   assign select1_WB = (do_writeback1_WB&&(writeRegister1_WB==writeRegister1));
-   assign data_write_2DM = (select1_WB)?result:Dest_Value1;
+//   assign select1_WB = (do_writeback1_WB&&(writeRegister1_WB==writeRegister1));
+   assign data_write_2DM = Dest_Value1; // (select1_WB)?result:Dest_Value1;
    assign data_address_2DM = address;
    
    assign Data1_2ID = (MemRead_2DM)?data_read_aligned:aluResult1;
@@ -171,16 +176,18 @@ module MEM (	FREEZE, CLK, RESET,
 			target_PC_OUT <= 32'b0;
 			Mem_Hazard_OUT <= 1'b0;
 			ROBPointer_OUT <= 6'b0;
+			Valid_Instruction_OUT <= 1'b0;
          end
        else if(!FREEZE)
          begin
            writeRegister1_PR <= writeRegister1;
-           result <= mem_or_not_mem_IN? data_read_aligned : aluResult1;
+           result <= Mem_Instruction_IN? data_read_aligned : aluResult1;
            do_writeback1_PR <= do_writeback1;
 			taken_branch1_OUT <= taken_branch1_IN;
 			target_PC_OUT <= target_PC_IN;
 			Mem_Hazard_OUT <= Mem_Hazard_IN;
 			ROBPointer_OUT <= ROBPointer_IN;
+			Valid_Instruction_OUT <= Valid_Instruction_IN;
          end
      end
 

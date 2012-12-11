@@ -20,7 +20,8 @@ module ISS	(
 				
 			// outputs
 				IQLSQ_popData_OUT,
-				IQSelected,
+				Valid_Instruction,
+				Mem_Instruciton,
 			
 				// IQ outputs
 				IQ_full_OUT,
@@ -44,7 +45,8 @@ input FREEZE;
 
 //IQLSQ output
 output reg [IQLSQ_WIDTH-1:0] IQLSQ_popData_OUT;
-output reg 					IQSelected;
+output reg 					Valid_Instruction;
+output reg 					Mem_Instruciton;
 
 //LSQ
 input LSQ_pushReq_IN;
@@ -64,8 +66,6 @@ input [RENISS_WIDTH-1:0] IQ_pushData_IN;
 // input          [ 5: 0] LS_fwd_reg;
 // input                  LS_fwd_data_WB;
 
-assign IQLSQ_popData_OUT = wIQselected? wIQ_popData: (wLSQselected? wLSQ_popData: 0);
-assign IQSelected = wIQselected;
 
 //==============================================================================
 // CREATE COMMON IQ/LSQ ENTRY
@@ -112,6 +112,9 @@ reg		rPr; /* priority of IQ vs LSQ */ always @(posedge CLK) 	rPr <= rPr + 1;
 wire wIQselected, wLSQselected;
 assign wIQselected = (wIQrdy && (!rPr || (rPr && !wLSQrdy)));
 assign wLSQselected = (wLSQrdy && (rPr || (!rPr && !wIQrdy)));
+assign IQLSQ_popData_OUT = wIQselected? wIQ_popData: (wLSQselected? wLSQ_popData: 0);
+assign Valid_Instruction = wIQselected || wLSQselected;
+assign Mem_Instruction = wLSQselected;Valid_Instruction
 
 assign wIQrdy = !wIQ_empty && instruction_ready;
 assign wLSQrdy = !wLSQ_empty && !busy_bits[wLSQ_headData[081:076]];
