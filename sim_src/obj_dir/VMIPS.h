@@ -52,8 +52,6 @@ VL_MODULE(VMIPS) {
     VL_SIG8(__Vclklast__TOP__CLK,0,0);
     VL_SIG8(__Vclklast__TOP__RESET,0,0);
     //char	__VpadToAlign170[2];
-    VL_SIG(__Vchglast__TOP__v__EXE1__DOT__Operand1,31,0);
-    VL_SIG(__Vchglast__TOP__v__EXE1__DOT__Operand2,31,0);
     
     // INTERNAL VARIABLES
     // Internals; generally not touched by application code

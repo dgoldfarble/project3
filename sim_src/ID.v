@@ -439,8 +439,8 @@ module ID ( 	CLK,
 
 	always  @ (posedge CLK) begin
 	   if(comment3) begin
-	/*	$display("=============================================================");
-		$display("[ID]:Read Register A1:%d\t\t|Read Register A2:%d",readRegisterA1,readRegisterA2);
+		$display("==ID===========================================================");
+	/*	$display("[ID]:Read Register A1:%d\t\t|Read Register A2:%d",readRegisterA1,readRegisterA2);
 		$display("[ID]:Read Register B1:%d\t\t|Read Register B2:%d",readRegisterB1,readRegisterB2);
 		$display("[ID]:Write Register 1:%d\t\t|Write Register 2:%d",writeRegister1,writeRegister2);
 		$display("[ID]:\tsyscalBubbleCounter:%x",syscalBubbleCounter);

@@ -332,8 +332,10 @@ module REN (	CLK,
 	
 	always  @ (posedge CLK) begin
 	if (comment) begin
-		$display(";;;;;;;;;;;;;;;;;;RENAME;;;;;;;;");
-		$display("%x %x", rPhysDestReg, fQ_IDREN_popData_IN);
+		$display("==RENAME==========================");
+		//$display("%d = %d  && !%d && !%d && !%d && !%d ", wCarryOn, RESET, FREEZE, rFreeLUnderflow, rIQoverflow, rLSQoverflow);
+		//$display("fIQ_full_IN: %d",fIQ_full_IN);
+		//$display(" rPhysDestReg: %x fQ_IDREN_popData_IN: %x\n", rPhysDestReg, fQ_IDREN_popData_IN);
 	end
 	end
 	

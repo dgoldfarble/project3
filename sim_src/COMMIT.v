@@ -54,6 +54,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 				fROB_target_PC_OUT,
 				fROB_set_PC_OUT
 				);
+				parameter comment = 0;
 				
 				input CLK, RESET, FREEZE;
 				
@@ -167,7 +168,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 	//assign fROB_probeData_OUT 	= wROB_probeDataOut[RENROB_DATAWIDTH-1:0];
 	
 	queue #(.DATA_WIDTH(ROB_DATAWIDTH), .ADDR_WIDTH(ROB_ADDRWIDTH), 
-			.SHOW_DEBUG(0), .QUEUE_NAME("Reorder Buffer"))
+			.SHOW_DEBUG(comment), .QUEUE_NAME("Reorder Buffer"))
 	ROB	(	CLK, RESET,
 			.pushReq_IN(tROB_pushReq_IN), 	.data_IN(wROB_pushData),
 			.popReq_IN(wROB_popReq), 		.data_OUT(wROB_popData),
@@ -263,4 +264,9 @@ module COMMIT ( CLK, RESET, FREEZE,
 	
 	end
 	
+	always @(posedge CLK) begin
+		if(comment) begin
+			//$display(
+		end
+	end
 endmodule

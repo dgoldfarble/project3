@@ -10,15 +10,15 @@ module MIPS (	R2_output,
              	iBlkWrite,
              	data_write_2DM,
              	//data_read_fDM,
-		block_write_2IM,
-		block_write_2DM,
-		block_read_fIM,
-		block_read_fDM,
+				block_write_2IM,
+				block_write_2DM,
+				block_read_fIM,
+				block_read_fDM,
              	//Instr1_fIM,
-		//Instr2_fIM,
+				//Instr2_fIM,
              	data_address_2DM,
              	CLK,
-	     	RESET,
+				RESET,
              	R2_input,
              	PC_init
             	);
@@ -449,7 +449,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 
 	
 	
-	always @(posedge CLK) begin
+/*	always @(posedge CLK) begin
 		$display("+++++++++ MIPS - RENAME (OUT)ERFACE");
 		$display ("IQPUSH:%x I:%x IsRegWr:%x aRegID:%d IsMemR:%x IsMemWr:%x PhReg:%d", 
 					wtIQ_pushReq, 
@@ -472,7 +472,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 					
 		$display ("ROBpush: %x", wtROB_pushReq);
 		// $display ("", );
-	end
+	end*/
 	
 	
 	

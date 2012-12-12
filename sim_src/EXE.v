@@ -147,7 +147,7 @@ module EXE(	// outputs
 			OpA1 = fwd_data_1_COM;
 		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1_IN)) // if two instructions past is a load and writing back
 			OpA1 = LS_fwd_data_COM;
-		else OpA1 = Operand1;
+		else OpA1 = Operand_A1_IN;
 		
 		
 		// Operand B1
@@ -160,12 +160,12 @@ module EXE(	// outputs
 				OpB1 = fwd_data_1_COM;
 			else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterB1_IN))
 				OpB1 = LS_fwd_data_COM;
-			else OpB1 = Operand2;
+			else OpB1 = Operand_B1_IN;
 		end
 		
 		
 		// LSQ register operand
-		if(RegDest_OUT && (writeRegister1_OUT == readRegisterA1_IN))
+		/*if(RegDest_OUT && (writeRegister1_OUT == readRegisterA1_IN))
 			OpB1 = aluresult_OUT;
 		else if(MemRead1_OUT && (writeRegister1_OUT == readRegisterA1_IN))
 			Hazard_flag = 1;
@@ -173,7 +173,7 @@ module EXE(	// outputs
 			OpB1 = fwd_data_1_COM;
 		else if(LS_fwd_data_COM_flag && (LS_fwd_reg_COM == readRegisterA1_IN))
 			OpB1 = LS_fwd_data_COM;
-		else OpB1 = Operand2;
+		else OpB1 = ;*/
 		
 		if(Branch_flag_IN) begin
 			Operand1 = PCA_IN;

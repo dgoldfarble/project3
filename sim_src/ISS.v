@@ -138,7 +138,7 @@ assign LSQ_full_OUT = wLSQ_full;
 // IQ AND LSQ - wires and stuff
 //==============================================================================	
 	
-	reg [IQLSQ_WIDTH-1:0]	IQ [IQLSQ_DEPTH-1:0];
+	reg [IQLSQ_WIDTH-1:0]	IQ [1<<IQLSQ_DEPTH-1:0];
 	
 	wire [3:0] PE_Request, PE_Grant;
 	wire [15:0] request_bus, grant_bus;
@@ -174,8 +174,8 @@ assign LSQ_full_OUT = wLSQ_full;
 	integer IQcount;
 	
 	wire wIQ_empty, wIQ_full;
-	assign wIQ_empty = IQcount!= 0;
-	assign wIQ_full = IQcount!= 16;	
+	assign wIQ_empty = IQcount == 0;
+	assign wIQ_full = IQcount == 16;	
 			
 	// LSQ
 	wire wLSQ_pushReq, wLSQ_popReq, wLSQ_empty, wLSQ_full;
@@ -220,6 +220,8 @@ assign LSQ_full_OUT = wLSQ_full;
 			// IQ: UPDATE READY FLAG(s) ACC TO BUSY_BITS
 			// -----------------------------
 			for (pos = 0; pos < IQcount; pos = pos + 1) begin
+		
+				
 				
 				// is srcReg1 ready? Update
 				IQ[pos][082] = IQ[pos][082] || !busy_bits[IQ[pos][081:076]];
@@ -250,7 +252,8 @@ assign LSQ_full_OUT = wLSQ_full;
 				end
 				
 				// Update busy bits
-				if (IQ[pos][96] /* Did it NEED a dest reg? */)
+				//Did it NEED a dest reg?
+				if (IQ[pos][96])
 					busy_bits[IQ[pos][095:090]] = 0; // Clear dest busy bit
 				
 				// update counter
@@ -310,6 +313,45 @@ assign LSQ_full_OUT = wLSQ_full;
 			
 		end
 	end
+	
+parameter comment = 1;
+integer idx;
+integer shortIdx;
+
+	always begin
+	if (comment)
+	begin
+		$display("----------------IQ------------------");
+//		if (flush_IN) $display("\n----------------FLUSH!!!!!!-----------------\n");
+		$display("Count: %d %s%s"/* %s"*/, IQcount, (wIQ_empty)?"EMPTY!":" ", (wIQ_full)?"FULL!":" ");//, (doBypassBuf)?"<---BYPASS!":" ");
+		$display("Push: %s(%x) Pop: %s(%x)", (IQ_pushReq_IN)?"Y":"N", wIQLSQ_pushData, (wIQselected)?"Y":"N", IQLSQ_popData_OUT);//, (validPush&&validPop)?"<---PUSHPOP":"       ");
+		$display("POS:%x",pos);
+		
+		/*$display("curTail:     %x, ", curTail_OUT);
+		$display("ProbeIdxIN:  %x, ProbeDataOUT: %x", probeIdx_IN, probeData_OUT);
+		$display("ProbePushIN: %x, ProbeDataIN:  %x", probePushReq_IN, probeData_IN);*/
+		
+		
+		for (idx = 0; idx <= 15; idx = idx + 1)
+		begin
+			shortIdx = idx;
+			
+			if (shortIdx == IQcount && shortIdx== 0)
+				$display ("BUF[%d]: %x %s", idx, IQ[idx], 		"<--HEAD <--TAIL");
+			else begin
+				if (shortIdx == 0)
+					$display ("BUF[%d]: %x %s", idx, IQ[idx], 	"<--HEAD");
+				
+				if (shortIdx == IQcount)
+					$display ("BUF[%d]: %x %s", idx, IQ[idx], 	"        <--TAIL");
+			end
+
+			if (shortIdx != IQcount && shortIdx!= 0)
+				$display ("BUF[%d]: %x %s", idx, IQ[idx], "");		
+		end
+	
+	end // if (SHOW_DEBUG)
+end
 		
 endmodule
 	
