@@ -654,7 +654,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				
 				.Valid_Instruction_IN(wRF_RW_EXE_Valid_Instruction),
 				.Valid_Instruction_OUT(wEXE_MEM_Valid_Instruction),
-				.FREEZE(FREEZE), .CLK(CLK), .RESET(RESET)
+				.FREEZE(DMISS), .CLK(CLK), .RESET(RESET)
 				);
 
 	
@@ -672,7 +672,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire			wMEM_EXE_RegDest;
 	wire			wMEM_ROB_Valid_Instruction;
 
-   MEM MEM1( .FREEZE(FREEZE), .CLK(CLK), .RESET(RESET),
+   MEM MEM1( .FREEZE(DMISS), .CLK(CLK), .RESET(RESET),
 				.result(wMEM_ROB_ALUResult),
 				.data_write_2DM(data_write_2DM), 
 				.data_address_2DM(data_address_2DM),
@@ -707,7 +707,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 				.Valid_Instruction_OUT(wMEM_ROB_Valid_Instruction)
     );
 
-	assign wMEM_RF_write_register_flag = MemRead || wMEM_EXE_RegDest;
+	assign wMEM_RF_write_register_flag = (MemRead && !DMISS) || wMEM_EXE_RegDest;
 	assign wMEM_RF_write_register_data = MemRead ? wMEM_ROB_Dest_Value1 : wMEM_EXE_RegDest ? wMEM_ROB_ALUResult : 0;
 	assign wMEM_RF_write_register_index = wMEM_ROB_writeRegister1;
 
@@ -737,9 +737,10 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	
 	wire wCommitFreeze, wtROB_pushReq, tROB_probePushReq_IN;
 	wire [RENROB_DATAWIDTH-1:0] wtROB_pushData, wfROB_probeData, wtROB_probePushData;
-	wire [ROB_ADDRWIDTH-1:0] 	wfROB_curTail, wtROB_probeIdx;
+	wire [ROB_ADDRWIDTH-1:0] 	wfROB_curTail, wfROB_curHead, wtROB_probeIdx;
 	wire wfROB_flushALL, wfRETRAT_copyRetRat;	
 	reg [RETRAT_WIDTH*RETRAT_DEPTH-1:0] 	wRetRat;// [1<<RETRAT_DEPTH-1:0];
+	//assign wCommitFreeze = 
 
 	COMMIT #(	.RENROB_DATAWIDTH(RENROB_DATAWIDTH), 
 				.ROB_ADDRWIDTH(ROB_ADDRWIDTH),
@@ -751,6 +752,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			.tROB_pushReq_IN(wtROB_pushReq),
 			.tROB_pushData_IN(wtROB_pushData),
 			.fROB_curTail_OUT(wfROB_curTail),
+			.fROB_curHead_OUT(wfROB_curHead),
 			
 			.tROB_probeIdx_IN(wtROB_probeIdx),
 			.tROB_probeSetFinBit_IN(wMEM_ROB_Valid_Instruction),
@@ -772,6 +774,27 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			.fROB_target_PC_OUT(branch_address_COMMIT),
 			.fROB_set_PC_OUT(branch_misprediction)
 		   );
+		   
+
+	always @(posedge CLK) begin
+		$display("==IF================================================");
+		$display("Instruction OUT: %x", Instr1_IFID);
+		$display("==ID================================================");
+		$display("");
+		$display("==REN===============================================");
+		$display("");
+		$display("==ISS===============================================");
+		$display("ROB Pointer OUT: %x", wIQLSQ_popData[037:032]);
+		$display("==RF================================================");
+		$display("ROB Pointer OUT: %x", wRF_RW_EXE_ROBPointer);
+		$display("==EXE===============================================");
+		$display("ROB Pointer OUT: %x; RESET: %d, FREEZE: %d", wEXE_MEM_ROBPointer, RESET, DMISS);
+		$display("==MEM===============================================");
+		$display("ROB Pointer OUT: %x", wtROB_probeIdx);
+		$display("==COM===============================================");
+		$display("Head Pointer: %x", wfROB_curHead);
+		
+	end
 				
 	
 endmodule

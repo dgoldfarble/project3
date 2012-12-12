@@ -35,6 +35,7 @@ module queue (	clk,
 				
 				// Current tail pointer
 				curTail_OUT,
+				curHead_OUT,
 				
 				// Probe stuff
 				probeIdx_IN,		// Index you want to read/write to
@@ -67,7 +68,7 @@ output 						emptyFlag_OUT;
 output 						fullFlag_OUT;
 output 	[DATA_WIDTH-1:0]	data_OUT;
 output 	[DATA_WIDTH-1:0]	probeData_OUT;
-output	[ADDR_WIDTH-1:0]	curTail_OUT;
+output	[ADDR_WIDTH-1:0]	curTail_OUT, curHead_OUT;
 
 `define MAX_BUF (1<<ADDR_WIDTH)	// Max no of elements in buf
 
@@ -118,6 +119,7 @@ end
 
 // Get some tail or a head
 assign curTail_OUT = tail;
+assign curHead_OUT = head;
 always @(posedge clk) begin
 	if (!reset || flush_IN) begin
 		tail 		<= 0;

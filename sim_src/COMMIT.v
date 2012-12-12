@@ -32,6 +32,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 				tROB_pushReq_IN,
 				tROB_pushData_IN,
 				fROB_curTail_OUT,
+				fROB_curHead_OUT,
 				tROB_probeIdx_IN,
 				//fROB_probeData_OUT,
 				//tROB_probePushReq_IN,
@@ -73,7 +74,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 				
 				//output 	[RENROB_DATAWIDTH-1:0] 	fROB_probeData_OUT;
 				output  reg 					fROB_full_OUT;
-				output	[ROB_ADDRWIDTH-1:0]		fROB_curTail_OUT;
+				output	[ROB_ADDRWIDTH-1:0]		fROB_curTail_OUT, fROB_curHead_OUT;
 				output	flushEm_OUT;
 				
 				input							tROB_reg_dest;
@@ -175,7 +176,8 @@ module COMMIT ( CLK, RESET, FREEZE,
 			.emptyFlag_OUT(wROB_empty), 	.fullFlag_OUT(fROB_full_OUT),
 			.curTail_OUT(fROB_curTail_OUT), .flush_IN (flushEm_OUT),
 			.probeIdx_IN(tROB_probeIdx_IN),	.probeData_OUT(wROB_probeDataOut),
-			.probePushReq_IN(tROB_probeSetFinBit_IN), .probeData_IN(wROB_probeDataIn)
+			.probePushReq_IN(tROB_probeSetFinBit_IN), .probeData_IN(wROB_probeDataIn),
+			.curHead_OUT(fROB_curHead_OUT)
 		);
 	//-------------------------------------------------------------------------
 	// ROB: Operations
@@ -198,7 +200,6 @@ module COMMIT ( CLK, RESET, FREEZE,
 			flushEm_OUT <= 0;
 			copyRetRat_OUT <= 0;
 		end else if (!FREEZE) begin
-		
 			// Can we pop ROB?
 			if (wROBheadRdy2Com) begin
 				// We're ready to pop.

@@ -207,7 +207,6 @@ assign LSQ_full_OUT = wLSQ_full;
 // BusyBits/IQ/LSQ operations
 //==============================================================================
 	wire [5:0] wbusy_temp;
-	always	$display("wIQselected %d, before always block", wIQselected);
 	always @(posedge CLK) begin
 	
 		if (!RESET) begin
@@ -239,7 +238,6 @@ assign LSQ_full_OUT = wLSQ_full;
 			// -----------------------------
 			// IQ: POP
 			// -----------------------------
-			$display("wIQselected %d in always block", wIQselected);
 			if (wIQselected) begin
 				
 				// Guaranteed to find an instruction that has woken up
@@ -254,7 +252,7 @@ assign LSQ_full_OUT = wLSQ_full;
 				//end
 				//	$display("tits");
 				wIQ_popData = IQ[pos-1];
-				$display("IQ[pos]: %x, wIQ_popData: %x", IQ[pos-1], wIQ_popData);
+				//$display("IQ[pos]: %x, wIQ_popData: %x", IQ[pos-1], wIQ_popData);
 
 				// compress the queue
 				for(counter = pos; counter < IQcount - 1; counter = counter + 1) begin
@@ -327,7 +325,7 @@ assign LSQ_full_OUT = wLSQ_full;
 		end
 	end
 	
-parameter comment = 1;
+parameter comment = 0;
 integer idx;
 integer shortIdx;
 
