@@ -90,14 +90,9 @@ void VMIPS::_settle__TOP__1(VMIPS__Syms* __restrict vlSymsp) {
     VL_DEBUG_IF(VL_PRINTF("    VMIPS::_settle__TOP__1\n"); );
     VMIPS* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
-    vlTOPp->block_write_2DM[0] = vlSymsp->TOP__v.block_write_2DM[0];
-    vlTOPp->block_write_2DM[1] = vlSymsp->TOP__v.block_write_2DM[1];
-    vlTOPp->block_write_2DM[2] = vlSymsp->TOP__v.block_write_2DM[2];
-    vlTOPp->block_write_2DM[3] = vlSymsp->TOP__v.block_write_2DM[3];
-    vlTOPp->block_write_2DM[4] = vlSymsp->TOP__v.block_write_2DM[4];
-    vlTOPp->block_write_2DM[5] = vlSymsp->TOP__v.block_write_2DM[5];
-    vlTOPp->block_write_2DM[6] = vlSymsp->TOP__v.block_write_2DM[6];
-    vlTOPp->block_write_2DM[7] = vlSymsp->TOP__v.block_write_2DM[7];
+    vlTOPp->R2_output = vlSymsp->TOP__v.R2_output;
+    vlTOPp->iBlkWrite = vlSymsp->TOP__v.iBlkWrite;
+    vlTOPp->dBlkWrite = vlSymsp->TOP__v.dBlkWrite;
     vlTOPp->block_write_2IM[0] = vlSymsp->TOP__v.block_write_2IM[0];
     vlTOPp->block_write_2IM[1] = vlSymsp->TOP__v.block_write_2IM[1];
     vlTOPp->block_write_2IM[2] = vlSymsp->TOP__v.block_write_2IM[2];
@@ -106,9 +101,14 @@ void VMIPS::_settle__TOP__1(VMIPS__Syms* __restrict vlSymsp) {
     vlTOPp->block_write_2IM[5] = vlSymsp->TOP__v.block_write_2IM[5];
     vlTOPp->block_write_2IM[6] = vlSymsp->TOP__v.block_write_2IM[6];
     vlTOPp->block_write_2IM[7] = vlSymsp->TOP__v.block_write_2IM[7];
-    vlTOPp->R2_output = vlSymsp->TOP__v.R2_output;
-    vlTOPp->iBlkWrite = vlSymsp->TOP__v.iBlkWrite;
-    vlTOPp->dBlkWrite = vlSymsp->TOP__v.dBlkWrite;
+    vlTOPp->block_write_2DM[0] = vlSymsp->TOP__v.block_write_2DM[0];
+    vlTOPp->block_write_2DM[1] = vlSymsp->TOP__v.block_write_2DM[1];
+    vlTOPp->block_write_2DM[2] = vlSymsp->TOP__v.block_write_2DM[2];
+    vlTOPp->block_write_2DM[3] = vlSymsp->TOP__v.block_write_2DM[3];
+    vlTOPp->block_write_2DM[4] = vlSymsp->TOP__v.block_write_2DM[4];
+    vlTOPp->block_write_2DM[5] = vlSymsp->TOP__v.block_write_2DM[5];
+    vlTOPp->block_write_2DM[6] = vlSymsp->TOP__v.block_write_2DM[6];
+    vlTOPp->block_write_2DM[7] = vlSymsp->TOP__v.block_write_2DM[7];
 }
 
 void VMIPS::_sequent__TOP__2(VMIPS__Syms* __restrict vlSymsp) {

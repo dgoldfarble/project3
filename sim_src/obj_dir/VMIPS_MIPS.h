@@ -215,6 +215,7 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__PVT__issue__DOT__PE_Grant,3,0);
     VL_SIG8(__PVT__issue__DOT__wLSQ_pushReq,0,0);
     VL_SIG8(__PVT__issue__DOT__wLSQ_popReq,0,0);
+    VL_SIG8(__PVT__issue__DOT__wbusy_temp,5,0);
     VL_SIG8(__PVT__issue__DOT__LSQ__DOT__probeIdx_IN,3,0);
     VL_SIG8(__PVT__issue__DOT__LSQ__DOT__probePushReq_IN,0,0);
     VL_SIG8(__PVT__issue__DOT__LSQ__DOT__head,3,0);
@@ -232,8 +233,10 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__PVT__commit__DOT__ROB__DOT__count,6,0);
     VL_SIG8(__PVT__commit__DOT__ROB__DOT__validPush,0,0);
     VL_SIG8(__PVT__commit__DOT__ROB__DOT__validPop,0,0);
+    //char	__VpadToAlign361[1];
     VL_SIG16(__PVT__issue__DOT__request_bus,15,0);
     VL_SIG16(__PVT__issue__DOT__grant_bus,15,0);
+    //char	__VpadToAlign366[2];
     VL_SIG(R2_output_ID,31,0);
     VL_SIG(Instr_fMEM,31,0);
     VL_SIG(Instr_address_2IM,31,0);
@@ -278,7 +281,6 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG(Instr2_fIC,31,0);
     VL_SIG(__PVT__data_read_fDC,31,0);
     VL_SIG(__PVT__branch_address_COMMIT,31,0);
-    //char	__VpadToAlign540[4];
     VL_SIGW(__PVT__wQ_IFID_popData,95,0,3);
     //char	__VpadToAlign556[4];
     VL_SIGW(__PVT__wQ_IDREN_popData,125,0,4);
@@ -458,6 +460,8 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__Vdlyvdim0__rename__DOT__freelist__DOT__buffer__v1,5,0);
     VL_SIG8(__Vdlyvset__rename__DOT__freelist__DOT__buffer__v1,0,0);
     VL_SIG8(__Vdly__issue__DOT__rPr,0,0);
+    VL_SIG8(__Vdly__issue__DOT__wIQselected,0,0);
+    VL_SIG8(__Vdly__issue__DOT__wLSQselected,0,0);
     VL_SIG8(__Vdly__issue__DOT__LSQ__DOT__count,4,0);
     VL_SIG8(__Vdly__issue__DOT__LSQ__DOT__tail,3,0);
     VL_SIG8(__Vdly__issue__DOT__LSQ__DOT__head,3,0);
@@ -476,7 +480,6 @@ VL_MODULE(VMIPS_MIPS) {
     VL_SIG8(__Vdlyvdim0__commit__DOT__ROB__DOT__buffer__v1,5,0);
     VL_SIG8(__Vdlyvset__commit__DOT__ROB__DOT__buffer__v1,0,0);
     VL_SIG8(__Vdly__ID1__DOT__syscalBubbleCounter,1,0);
-    //char	__VpadToAlign78518[2];
     VL_SIGW(issue__DOT____Vlvbound4,136,0,5);
     //char	__VpadToAlign78540[4];
     VL_SIGW(issue__DOT____Vlvbound5,136,0,5);

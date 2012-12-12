@@ -16,7 +16,7 @@ module ISS	(
 				
 				// LSQ inputs
 				LSQ_pushReq_IN,
-				LSQ_pushData_IN,				
+				LSQ_pushData_IN,
 				
 			// outputs
 				IQLSQ_popData_OUT,
@@ -114,8 +114,6 @@ reg		rPr; /* priority of IQ vs LSQ */ always @(posedge CLK) 	rPr <= rPr + 1;
 	wire [137-1:0] wLSQ_headData, wLSQ_tailData;
 
 wire wIQselected, wLSQselected, wIQrdy, wLSQrdy;
-assign wIQselected = (wIQrdy && (!rPr || (rPr && !wLSQrdy)));
-assign wLSQselected = (wLSQrdy && (rPr || (!rPr && !wIQrdy)));
 assign IQLSQ_popData_OUT = wIQselected? wIQ_popData: (wLSQselected? wLSQ_popData: 0);
 assign Valid_Instruction = wIQselected || wLSQselected;
 assign Mem_Instruction = wLSQselected;
@@ -143,7 +141,7 @@ assign LSQ_full_OUT = wLSQ_full;
 	wire [3:0] PE_Request, PE_Grant;
 	wire [15:0] request_bus, grant_bus;
 	wire instruction_ready;
-		
+		 
 	wire [IQLSQ_WIDTH-1:0] wIQ_popData, wLSQ_popData;
 	
 	assign request_bus[0] = IQ[0][104]; // Ready bit
@@ -170,12 +168,13 @@ assign LSQ_full_OUT = wLSQ_full;
 	PE PE3 (PE_Grant[3], request_bus[15:12], grant_bus[15:12], PE_Request[3]);
 	
 	integer counter, pos;
+	reg	[5:0] pos1;
 			
 	integer IQcount;
 	
 	wire wIQ_empty, wIQ_full;
 	assign wIQ_empty = IQcount == 0;
-	assign wIQ_full = IQcount == 16;	
+	assign wIQ_full = IQcount == 16;
 			
 	// LSQ
 	wire wLSQ_pushReq, wLSQ_popReq, wLSQ_empty, wLSQ_full;
@@ -207,7 +206,8 @@ assign LSQ_full_OUT = wLSQ_full;
 //==============================================================================
 // BusyBits/IQ/LSQ operations
 //==============================================================================
-
+	wire [5:0] wbusy_temp;
+	always	$display("wIQselected %d, before always block", wIQselected);
 	always @(posedge CLK) begin
 	
 		if (!RESET) begin
@@ -215,6 +215,9 @@ assign LSQ_full_OUT = wLSQ_full;
 			IQcount = 0;
 			
 		end else if (!FREEZE) begin
+		
+		wIQselected <= (wIQrdy && (!rPr || (rPr && !wLSQrdy)));
+		wLSQselected <= (wLSQrdy && (rPr || (!rPr && !wIQrdy)));
 		
 			// -----------------------------
 			// IQ: UPDATE READY FLAG(s) ACC TO BUSY_BITS
@@ -236,6 +239,7 @@ assign LSQ_full_OUT = wLSQ_full;
 			// -----------------------------
 			// IQ: POP
 			// -----------------------------
+			$display("wIQselected %d in always block", wIQselected);
 			if (wIQselected) begin
 				
 				// Guaranteed to find an instruction that has woken up
@@ -244,7 +248,13 @@ assign LSQ_full_OUT = wLSQ_full;
 				for(pos = 0; (!grant_bus[pos]) && (pos < IQcount); pos = pos + 1);
 
 				// pop that data
-				wIQ_popData = IQ[pos];
+				//$display("pos: %x IQ[pos]: %x", pos, IQ[pos]);
+				//for(pos = 0; pos < 16; pos = pos+1) begin
+				//	$display("IQ[%d]: %x", pos, IQ[pos]);
+				//end
+				//	$display("tits");
+				wIQ_popData = IQ[pos-1];
+				$display("IQ[pos]: %x, wIQ_popData: %x", IQ[pos-1], wIQ_popData);
 
 				// compress the queue
 				for(counter = pos; counter < IQcount - 1; counter = counter + 1) begin
@@ -253,10 +263,13 @@ assign LSQ_full_OUT = wLSQ_full;
 				
 				// Update busy bits
 				//Did it NEED a dest reg?
-				if (IQ[pos][96])
-					busy_bits[IQ[pos][095:090]] = 0; // Clear dest busy bit
+				if (IQ[pos][96]) begin
+					wbusy_temp = IQ[pos[3:0]][095:090];
+					busy_bits[wbusy_temp] = 0; // Clear dest busy bit
+				end
 				
 				// update counter
+				if(IQcount != 0)
 				IQcount = IQcount - 1;
 			end
 			
@@ -325,7 +338,9 @@ integer shortIdx;
 //		if (flush_IN) $display("\n----------------FLUSH!!!!!!-----------------\n");
 		$display("Count: %d %s%s"/* %s"*/, IQcount, (wIQ_empty)?"EMPTY!":" ", (wIQ_full)?"FULL!":" ");//, (doBypassBuf)?"<---BYPASS!":" ");
 		$display("Push: %s(%x) Pop: %s(%x)", (IQ_pushReq_IN)?"Y":"N", wIQLSQ_pushData, (wIQselected)?"Y":"N", IQLSQ_popData_OUT);//, (validPush&&validPop)?"<---PUSHPOP":"       ");
-		$display("POS:%x",pos);
+		$display("wIQselected = %d = (%d && (!%d || (%d && !%d)));", wIQselected, wIQrdy, rPr, rPr, wLSQrdy);
+		$display("!wIQ_empty:!%d && instruction_ready:%d PE_Request:%x, request_bus:%x, wIQ_popData:%x", wIQ_empty, instruction_ready, PE_Request, request_bus, wIQ_popData);
+		$display("POS:%x", pos);
 		
 		/*$display("curTail:     %x, ", curTail_OUT);
 		$display("ProbeIdxIN:  %x, ProbeDataOUT: %x", probeIdx_IN, probeData_OUT);
