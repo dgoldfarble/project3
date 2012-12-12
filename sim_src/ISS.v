@@ -36,7 +36,7 @@ parameter ROB_pointer_bits = 6;
 parameter RENISS_WIDTH = 0; // Width of the incoming data from Rename
 parameter IDREN_WIDTH = 0;
 
-parameter IQLSQ_WIDTH = 137; 
+parameter IQLSQ_WIDTH = 0; // Change this in MIPS.v
 parameter IQLSQ_DEPTH = 4;
 
 input CLK;
@@ -246,7 +246,7 @@ assign LSQ_full_OUT = wLSQ_full;
 
 				// compress the queue
 				for(counter = pos; counter < IQcount - 1; counter = counter + 1) begin
-					IQ[counter] <= IQ[counter + 1];
+					IQ[counter] = IQ[counter + 1];
 				end
 				
 				// Update busy bits

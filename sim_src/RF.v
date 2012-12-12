@@ -125,11 +125,11 @@ module RF	(	FREEZE,
 		begin
 			ROBPointer <= 0;
 			Instr1 <= 0;
-			writeRegister1 <= 0;
-			readRegisterA1 <= 0;
+			// writeRegister1 <= 0;
+			// readRegisterA1 <= 0;
 			Operand_A1 <= 0;
-			Immediate <= 0;
-			ALU_control1 <= 0;
+			// Immediate <= 0;
+			// ALU_control1 <= 0;
 			// instruction 1 input
 			readRegisterB1 <= 0;
 			Operand_B1 <= 0;
@@ -150,12 +150,12 @@ module RF	(	FREEZE,
 			ROBPointer <= wROBPointer;
 			Instr1 <= wInstr;
 			PCA <= IQLSQ_popData_IN[136:105];
-			writeRegister1 <= wwriteRegister1;
-			readRegisterA1 <= wreadRegisterA1;
+			// writeRegister1 <= wwriteRegister1;
+			// readRegisterA1 <= wreadRegisterA1;
 			Operand_A1 <= Reg[readRegisterA1];
-			Immediate <= wImmediate;
-			ALU_control1 <= wALU_control1;
-			Dest_Value1 <= Reg[wwriteRegister1];
+			// Immediate <= wImmediate;
+			// ALU_control1 <= wALU_control1;
+			Dest_Value1 <= Reg[writeRegister1];
 			// instruction 1 input
 			readRegisterB1 <= !wmem_or_not_mem? IQLSQ_popData_IN[088:083] : 0;
 			Operand_B1 <= !wmem_or_not_mem? Reg[IQLSQ_popData_IN[088:083]] : 0;

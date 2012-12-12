@@ -479,8 +479,9 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	////////////////////////////////////////////////////////////////////////////
 	// ISSUE - ISS.v////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
+	parameter IQLSQ_WIDTH = 137;
 	
-	wire [RENISSUE_WIDTH-1:0]	wIQLSQ_popData;
+	wire [IQLSQ_WIDTH-1:0]	wIQLSQ_popData;
 	wire			wValid_Instruction;
 	wire			wMem_Instruction;
 	wire wFreezeISS;
@@ -488,7 +489,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	
 	ISS #(	.RENISS_WIDTH(RENISSUE_WIDTH),
 			.IDREN_WIDTH(Q_IDREN_DATAWIDTH),
-			.IQLSQ_WIDTH(RENISSUE_WIDTH))
+			.IQLSQ_WIDTH(IQLSQ_WIDTH))
 	issue (	CLK, RESET, 
 			.FREEZE(wFreezeISS),
 			
@@ -541,7 +542,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire			wMEM_RF_write_register_flag;
 	wire			wRF_RW_EXE_Valid_Instruction;
 		
-	RF #(.RENISS_WIDTH(RENROB_DATAWIDTH),
+	RF #(.RENISS_WIDTH(IQLSQ_WIDTH),
 			.IDREN_WIDTH(Q_IDREN_DATAWIDTH),
 			.ROBINDEX(ROB_ADDRWIDTH))
 	RF_ReadWrite	(	.FREEZE(DMISS), .CLK(CLK), .RESET(RESET),
