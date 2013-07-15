@@ -52,6 +52,8 @@ module ID ( 	CLK,
 		isBranch_OUT,
 		isLink_OUT,
 		PCA_OUT,
+		CIA_OUT,
+		
 		signExtImm_OUT
 		);
    	
@@ -86,7 +88,7 @@ module ID ( 	CLK,
 	output reg 			isJumpReg_OUT;
 	output reg 			isBranch_OUT;
 	output reg 			isLink_OUT;
-	output reg [31: 0] 	PCA_OUT, signExtImm_OUT;
+	output reg [31: 0] 	PCA_OUT, CIA_OUT, signExtImm_OUT;
 	
 
 	input           [31: 0] Data1_MEM;
@@ -182,6 +184,7 @@ module ID ( 	CLK,
 	assign isBranch_OUT = branch1;
 	assign isLink_OUT = link1;
 	assign PCA_OUT = wPCA;
+	assign CIA_OUT = wCIA;
 	
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
@@ -191,9 +194,9 @@ module ID ( 	CLK,
 	
 	
     reg             [ 1: 0] syscalBubbleCounter;
-	reg                     comment1;
-	reg                     comment2;  
-	reg                     comment3;
+	parameter comment1 = 0;
+	parameter comment2 = 0;  
+	parameter comment3 = 0;
  	// reg			single_fetch_PR;
 	
 	initial begin

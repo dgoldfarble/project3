@@ -54,6 +54,9 @@ module COMMIT ( CLK, RESET, FREEZE,
 				
 				fROB_target_PC_OUT,
 				fROB_set_PC_OUT
+				fROB_set_PC_OUT,
+				
+				retrat
 				);
 				parameter comment = 0;
 				
@@ -139,6 +142,7 @@ module COMMIT ( CLK, RESET, FREEZE,
 	//-------------------------------------------------------------------------	
 	parameter ROB_DATAWIDTH = RENROB_DATAWIDTH + 2;
 	parameter pFINISH_DEFAULT = 1'b0; parameter pEXCEPT_DEFAULT = 1'b0;
+	integer i;
 	
 	/*							//  182:151 target PC placeholder
 	fQ_IDREN_popData_IN [125],	// 	150:150 1 ALU Src (Imm flag)
@@ -193,6 +197,12 @@ module COMMIT ( CLK, RESET, FREEZE,
 	assign wROBheadRdy2Com 	=  wROBheadFin && wROBheadSafe;
 	assign wROBhead_jump 	= wROBhead[42];
 	assign wROBhead_target_PC = wROBhead[182:151];
+	
+	initial begin
+		for(i = 1; i < 32; i=i+1) begin
+			retrat[i] = retrat[i-1] +1;
+		end
+	end
 	
 	always @(posedge CLK) begin
 		if (!RESET) begin

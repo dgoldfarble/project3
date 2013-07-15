@@ -187,7 +187,8 @@ module MIPS (	R2_output,
 	wire branch_misprediction;
 	wire [31:0] branch_address_COMMIT;
    // Pipeline Stages Instantiation
-   IF IF1( CLK,
+   IF #(.comment(0))
+   	IF1( CLK,
         RESET,
         .FREEZE(FREEZE || wQ_IFID_full),
         .fetchNull2(0),//.fetchNull2(fetchNull2_fID),
@@ -264,7 +265,8 @@ module MIPS (	R2_output,
 	wire wFreezeID;
 	assign wFreezeID = wQ_IFID_empty || wQ_IDREN_full;
 	
-   ID ID1( CLK,
+   ID #(.comment1(1), .comment3(0))
+   		ID1( CLK,
         RESET,
         .FREEZE(wFreezeID),					// *
         ALUSrc1_IDEXE,			// 2REN
@@ -315,6 +317,7 @@ module MIPS (	R2_output,
 		.isBranch_OUT(branch_IDREN),
 		.isLink_OUT(link_IDREN),
 		.PCA_OUT(PCA_IDREN),
+		.CIA_OUT(CIA_IDREN),
 		.signExtImm_OUT(signExtImm_IDREN)
     );
 	/*
@@ -328,7 +331,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 );*/
 	
 	wire	link_IDREN,	jumpReg_IDREN, jump_IDREN, branch_IDREN;
-	wire [31:0] PCA_IDREN, signExtImm_IDREN;
+	wire [31:0] PCA_IDREN, CIA_IDREN, signExtImm_IDREN;
 	
 	////////////////////////////////////////////////////////////////////////////
 	// Q_IDREN (ID-RegRename queue)/////////////////////////////////////////////
@@ -348,7 +351,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	assign wQ_IDREN_pushData = {ALUSrc1_IDEXE,		//1		125:125
 								signExtImm_IDREN,	//32	124:093
 								ALU_control1_IDEXE,	//6		092:087
-								PCA_IDREN,			//32	086:055
+								CIA_IDREN,			//32	086:055
 								readRegisterA1_IDEXE,//5	054:050
 								readRegisterB1_IDEXE,//5	049:045
 								link_IDREN,			//1		044:044
@@ -408,12 +411,16 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire FreeL_push_Req;
 	wire [5:0] FreeL_push_Data;
 	
+	wire [PHYSREGS_DEPTH-1: 0]	renrat [31:0] /*verilator public*/;
+	
 	REN #(	.IDREN_POP_WIDTH(Q_IDREN_DATAWIDTH),
 			.PHYSREGS_DEPTH(PHYSREGS_DEPTH),
 			.ARCHREGS_DEPTH(ARCHREGS_DEPTH),
 			.RENISSUE_WIDTH(RENISSUE_WIDTH),
 			.RENROB_DATAWIDTH(RENROB_DATAWIDTH),
-			.ROB_ADDRWIDTH(ROB_ADDRWIDTH))
+			.ROB_ADDRWIDTH(ROB_ADDRWIDTH),
+			.comment(0),
+			.SHOW_FREELIST(0))
 	rename (CLK, RESET, 
 	
 		.FREEZE(wFreezeREN),
@@ -444,7 +451,9 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 		// Freelist push interfaces
 		.tFreeL_pushReq_IN (FreeL_push_Req),
 		.tFreeL_pushData_IN (FreeL_push_Data),
-		.fFreeL_full_OUT()
+		.fFreeL_full_OUT(),
+		
+		.renrat(renrat)
 		);
 
 	
@@ -541,6 +550,7 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire [ 5: 0]	wMEM_RF_write_register_index;
 	wire			wMEM_RF_write_register_flag;
 	wire			wRF_RW_EXE_Valid_Instruction;
+	wire [31: 0]	Reg_RF [63:0] /*verilator public*/;
 		
 	RF #(.RENISS_WIDTH(IQLSQ_WIDTH),
 			.IDREN_WIDTH(Q_IDREN_DATAWIDTH),
@@ -578,7 +588,8 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 						//write back
 						.write_register_data(wMEM_RF_write_register_data),
 						.write_register_index(wMEM_RF_write_register_index),
-						.write_register_flag(wMEM_RF_write_register_flag)
+						.write_register_flag(wMEM_RF_write_register_flag),
+						.Reg(Reg_RF)
 					);
 	
 	
@@ -741,11 +752,14 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 	wire wfROB_flushALL, wfRETRAT_copyRetRat;	
 	reg [RETRAT_WIDTH*RETRAT_DEPTH-1:0] 	wRetRat;// [1<<RETRAT_DEPTH-1:0];
 	//assign wCommitFreeze = 
+	
+	wire [PHYSREGS_DEPTH-1: 0]	retrat [31:0] /*verilator public*/;
 
 	COMMIT #(	.RENROB_DATAWIDTH(RENROB_DATAWIDTH), 
 				.ROB_ADDRWIDTH(ROB_ADDRWIDTH),
 				.RETRAT_WIDTH(PHYSREGS_DEPTH),
-				.RETRAT_DEPTH(RETRAT_DEPTH))
+				.RETRAT_DEPTH(RETRAT_DEPTH),
+				.comment(0))
 	commit (CLK, RESET, .FREEZE(wCommitFreeze),
 	
 			.fROB_full_OUT(wfROB_full),
@@ -772,27 +786,33 @@ EXE EXE1( CLK, RESET, FREEZE,ALUSrc1_EXEM,ALUSrc1_IDEXE,Instr1_IDREN,Instr1_EXEM
 			.fROB_free_register_Id_OUT(FreeL_push_Data),
 			
 			.fROB_target_PC_OUT(branch_address_COMMIT),
-			.fROB_set_PC_OUT(branch_misprediction)
+			.fROB_set_PC_OUT(branch_misprediction),
+			
+			.retrat(retrat)
 		   );
 		   
 
 	always @(posedge CLK) begin
-		$display("==IF================================================");
-		$display("Instruction OUT: %x", Instr1_IFID);
+/*		$display("==IF================================================");
+		$display("CIA:%x\tInstruction OUT:%x", CIA_IFID, Instr1_IFID);
 		$display("==ID================================================");
-		$display("");
+		$display("CIA:%x\tInstruction OUT:%x", CIA_IDREN, Instr1_IDREN);
 		$display("==REN===============================================");
-		$display("");
-		$display("==ISS===============================================");
-		$display("ROB Pointer OUT: %x", wIQLSQ_popData[037:032]);
+		if(wtROB_pushReq) $display("ROB: %b",wfROB_curTail);
+		if(wtIQ_pushReq) $display("IQ CIA:%x\tInstruction OUT:%x", wtIQ_pushData[086:055], wtIQ_pushData[031:000]);
+		if(wtLSQ_pushReq) $display("LSQ CIA:%x\tInstruction OUT:%x", wtLSQ_pushData[086:055], wtLSQ_pushData[031:000]);
+		$display("==ISS===============================================\n");
+		//$display("ROB Pointer OUT: %x", wIQLSQ_popData[037:032]);
 		$display("==RF================================================");
-		$display("ROB Pointer OUT: %x", wRF_RW_EXE_ROBPointer);
+		$display("ROB: %x", wRF_RW_EXE_ROBPointer);
+		if(wRF_RW_EXE_Valid_Instruction) $display("Read: REG[%d]: %d",wRF_RW_EXE_readRegisterA1, wRF_RW_EXE_Operand_A1);
+		if(wMEM_RF_write_register_flag) $display("Write: REG[%d]: %d %x", wMEM_RF_write_register_index, wMEM_RF_write_register_data, wMEM_RF_write_register_data);
 		$display("==EXE===============================================");
 		$display("ROB Pointer OUT: %x; RESET: %d, FREEZE: %d", wEXE_MEM_ROBPointer, RESET, DMISS);
 		$display("==MEM===============================================");
 		$display("ROB Pointer OUT: %x", wtROB_probeIdx);
 		$display("==COM===============================================");
-		$display("Head Pointer: %x", wfROB_curHead);
+		$display("Head Pointer: %x", wfROB_curHead);*/
 		
 	end
 				

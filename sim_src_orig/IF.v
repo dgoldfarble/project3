@@ -78,11 +78,11 @@ module IF(	CLK,
 
   always  @ (posedge CLK) begin
      if (comment) begin
-	$display("=============================================================");
+	$display("==IF===========================================================");
 	/*$display("[IF]:Instr1_fIM:%x\t|Instr2_fIM:%x",Instr1_fIM,Instr2_fIM);
-	/*$display("[IF]:\tsingle_fetch:%x",single_fetch);
+	$display("[IF]:\tsingle_fetch:%x",single_fetch);
 	*/$display("[IF]:\tPCA:%x",PCA);
-	$display("[IF]:\tCIA:%x",CIA);
+	$display("[IF]:\tCIA:%x\tInstruction OUT: %x",CIA, Instr1_PR);
 	/*$display("[IF]:\tPC:%x",PC);
 	$display("[IF]:\tFPC:%x",FPC);
 	$display("[IF]:\tInstr_address_2IM:%x",Instr_address_2IM);

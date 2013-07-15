@@ -33,7 +33,9 @@ module REN (	CLK,
 				// freelist
 				tFreeL_pushReq_IN,
 				tFreeL_pushData_IN,
-				fFreeL_full_OUT
+				fFreeL_full_OUT,
+				
+				renrat
 				);
 	
 		
@@ -48,6 +50,8 @@ module REN (	CLK,
 	
 	parameter RENRAT_WIDTH 		= PHYSREGS_DEPTH;
 	parameter RENRAT_DEPTH 		= 32;
+	
+	integer i;
 	
 	// OUTPUTS
 	
@@ -83,7 +87,7 @@ module REN (	CLK,
 
 	reg rIQoverflow, rLSQoverflow;	
 	reg [RENRAT_DEPTH-1:0] renratctr;
-	reg [RENRAT_WIDTH-1:0] renrat [(1<<RENRAT_DEPTH)-1:0];
+	output reg [RENRAT_WIDTH-1:0] renrat [RENRAT_DEPTH-1:0];
 
 	reg [RENRAT_WIDTH-1:0] rPhysDestReg;
 	reg [RENRAT_WIDTH-1:0] rPhysSrc1Reg;
@@ -153,6 +157,12 @@ module REN (	CLK,
 								
 	
 	// Overflow flags for LSQ and IQ
+	
+	initial begin
+		for(i = 1; i < RENRAT_DEPTH; i=i+1) begin
+			renrat[i] = renrat[i-1] +1;
+		end
+	end
 	
 	always @(posedge CLK) begin
 		if (!RESET) begin
@@ -272,10 +282,9 @@ module REN (	CLK,
 				renrat[30] <= tRenRatOverwriteData_IN[185:180];
 				renrat[31] <= tRenRatOverwriteData_IN[191:186];
 
-
-			end else begin				
-				if (wDestRegReqd && !wQ_FreeL_popReq) begin
-				 	renrat[wWrRegID] <= rPhysDestReg;			 
+			end else begin	
+				if (wDestRegReqd && wQ_FreeL_popReq) begin
+				 	renrat[wWrRegID] <= rPhysDestReg;	
 				end			
 			end
 		end	
@@ -294,7 +303,7 @@ module REN (	CLK,
 
 	queue #(.DATA_WIDTH(PHYSREGS_DEPTH),
 			.ADDR_WIDTH(PHYSREGS_DEPTH),
-			.SHOW_DEBUG(0),
+			.SHOW_DEBUG(SHOW_FREELIST),
 			.INIT_CODE(1),
 			.QUEUE_NAME("FREELIST"))
 	freelist (
@@ -329,6 +338,7 @@ module REN (	CLK,
 	
 	// COMMENTS//////////////////////////////////////////////////////////////
 	parameter comment = 0;
+	parameter SHOW_FREELIST = 0;
 	
 	always  @ (posedge CLK) begin
 	if (comment) begin
