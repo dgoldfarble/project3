@@ -198,7 +198,10 @@ module MIPS (	R2_output,
         Instr_address_2IM
     );
 
-   ID ID1( CLK,
+   ID #(.comment1(1),
+   		.comment2(0),
+   		.comment3(1))
+   	ID1( CLK,
         RESET,
         FREEZE,
         ALUSrc1_IDEXE,
