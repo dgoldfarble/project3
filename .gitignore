@@ -1,5 +1,6 @@
 ~*
 app_obj/
-app_src/
 VMIPS
 VMIPS_orig
+sim_src/obj_dir/
+sim_src_orig/obj_dir/
